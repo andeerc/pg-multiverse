@@ -158,4 +158,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-*For more detailed information about changes, see the [commit history](https://github.com/pg-multiverse/pg-multiverse/commits/main) or [release notes](https://github.com/pg-multiverse/pg-multiverse/releases).*
+*For more detailed information about changes, see the [commit history](https://github.com/andeerc/pg-multiverse/commits/main) or [release notes](https://github.com/andeerc/pg-multiverse/releases).*

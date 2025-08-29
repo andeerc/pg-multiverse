@@ -71,13 +71,13 @@
     "email": "contact@pg-multiverse.dev"
   },
   "license": "MIT",
-  "homepage": "https://github.com/pg-multiverse/pg-multiverse#readme",
+  "homepage": "https://github.com/andeerc/pg-multiverse#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pg-multiverse/pg-multiverse.git"
+    "url": "git+https://github.com/andeerc/pg-multiverse.git"
   },
   "bugs": {
-    "url": "https://github.com/pg-multiverse/pg-multiverse/issues"
+    "url": "https://github.com/andeerc/pg-multiverse/issues"
   },
   "funding": [
     {

@@ -43,7 +43,7 @@ cd pg-multiverse
 
 3. **Add the upstream** remote:
 ```bash
-git remote add upstream https://github.com/pg-multiverse/pg-multiverse.git
+git remote add upstream https://github.com/andeerc/pg-multiverse.git
 ```
 
 ## 🛠️ Development Setup
