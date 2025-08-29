@@ -1,7 +1,7 @@
 // Exportações principais
 export { MultiClusterPostgres } from './cluster/MultiClusterPostgres';
 export { ClusterManager } from './cluster/ClusterManager';
-export { ClusterConfig } from './cluster/ClusterConfig';
+export { ClusterConfig as ClusterConfigManager } from './cluster/ClusterConfig';
 export { ConnectionPool } from './cluster/ConnectionPool';
 
 // Exportações de cache
