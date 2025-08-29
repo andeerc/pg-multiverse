@@ -12,15 +12,17 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
   private compressionThreshold: number;
   private strategy: 'lru' | 'lfu' | 'fifo';
 
-  constructor(config: {
-    maxSize?: number;
-    ttl?: number;
-    enableCompression?: boolean;
-    compressionThreshold?: number;
-    strategy?: 'lru' | 'lfu' | 'fifo';
-  } = {}) {
+  constructor(
+    config: {
+      maxSize?: number;
+      ttl?: number;
+      enableCompression?: boolean;
+      compressionThreshold?: number;
+      strategy?: 'lru' | 'lfu' | 'fifo';
+    } = {}
+  ) {
     super();
-    
+
     this.maxSize = config.maxSize || 1000;
     this.defaultTtl = config.ttl || 300000; // 5 minutes
     this.enableCompression = config.enableCompression || false;
@@ -49,7 +51,7 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
 
   async get<T>(key: string): Promise<T | null> {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       this.stats.misses++;
       this.emit('miss', key);
@@ -91,9 +93,9 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
       if (this.enableCompression && size > this.compressionThreshold) {
         try {
           // Simulate compression by just marking it as compressed
-          processedValue = { 
-            __compressed: true, 
-            data: JSON.stringify(value) 
+          processedValue = {
+            __compressed: true,
+            data: JSON.stringify(value),
           } as any;
           size = this.calculateSize(processedValue);
         } catch (error) {
@@ -131,7 +133,7 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
 
   async has(key: string): Promise<boolean> {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return false;
     }
@@ -149,18 +151,18 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
 
   async delete(key: string): Promise<boolean> {
     const deleted = this.cache.delete(key);
-    
+
     if (deleted) {
       this.emit('delete', key);
       this.updateStats();
     }
-    
+
     return deleted;
   }
 
   async invalidateBySchema(schema: string): Promise<number> {
     let count = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (entry.schema === schema) {
         this.cache.delete(key);
@@ -175,7 +177,7 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
 
   async invalidateByTags(tags: string[]): Promise<number> {
     let count = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       const hasMatchingTag = tags.some(tag => entry.tags.has(tag));
       if (hasMatchingTag) {
@@ -191,7 +193,7 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
 
   async invalidateByCluster(cluster: string): Promise<number> {
     let count = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (entry.cluster === cluster) {
         this.cache.delete(key);
@@ -206,7 +208,7 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
 
   async invalidateByPattern(pattern: RegExp): Promise<number> {
     let count = 0;
-    
+
     for (const key of this.cache.keys()) {
       if (pattern.test(key)) {
         this.cache.delete(key);
@@ -226,7 +228,7 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
   async clear(): Promise<void> {
     const count = this.cache.size;
     this.cache.clear();
-    
+
     this.stats.evictions += count;
     this.updateStats();
   }
@@ -249,7 +251,7 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
 
   async getMetadata(key: string): Promise<Omit<CacheEntry, 'value'> | null> {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return null;
     }
@@ -359,7 +361,7 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
     if (typeof value === 'string') {
       return value.length * 2; // Rough estimate for UTF-16
     }
-    
+
     try {
       return JSON.stringify(value).length * 2;
     } catch {
@@ -369,9 +371,11 @@ export class MemoryCache extends EventEmitter implements CacheProvider {
 
   private updateStats(): void {
     this.stats.itemCount = this.cache.size;
-    this.stats.totalSize = Array.from(this.cache.values())
-      .reduce((sum, entry) => sum + entry.size, 0);
-    
+    this.stats.totalSize = Array.from(this.cache.values()).reduce(
+      (sum, entry) => sum + entry.size,
+      0
+    );
+
     this.updateHitRate();
   }
 

@@ -1,8 +1,8 @@
 import { EventEmitter } from 'events';
-import { 
-  MultiClusterConfig, 
-  QueryParam, 
-  QueryResult, 
+import {
+  MultiClusterConfig,
+  QueryParam,
+  QueryResult,
   QueryOptions,
   TransactionOptions,
   TransactionCallback,
@@ -13,7 +13,7 @@ import {
   ClusterHealth,
   MultiClusterEvents,
   TypedEventEmitter,
-  ValidationResult
+  ValidationResult,
 } from '../types';
 import { ClusterManager } from './ClusterManager';
 import { ClusterConfig } from './ClusterConfig';
@@ -45,7 +45,7 @@ export class MultiClusterPostgres extends EventEmitter {
       cluster: {},
       cache: {},
       configPath: config.configPath || '',
-      ...config
+      ...config,
     };
 
     this.clusterManager = new ClusterManager(config.cluster);
@@ -97,11 +97,12 @@ export class MultiClusterPostgres extends EventEmitter {
       this.isInitialized = true;
       this.emit('initialized', {
         clusters: Array.from(this.clusterManager.getClusters().keys()),
-        schemas: Array.from(this.schemas.keys())
+        schemas: Array.from(this.schemas.keys()),
       });
 
-      console.log(`MultiClusterPostgres initialized with ${this.clusterManager.getClusters().size} clusters and ${this.schemas.size} schemas`);
-
+      console.log(
+        `MultiClusterPostgres initialized with ${this.clusterManager.getClusters().size} clusters and ${this.schemas.size} schemas`
+      );
     } catch (error) {
       this.emit('error', error as Error);
       throw error;
@@ -112,8 +113,8 @@ export class MultiClusterPostgres extends EventEmitter {
    * Executa query com roteamento automático
    */
   async query<T = any>(
-    sql: string, 
-    params: QueryParam[] = [], 
+    sql: string,
+    params: QueryParam[] = [],
     options: QueryOptions = {}
   ): Promise<QueryResult<T>> {
     this._ensureInitialized();
@@ -124,7 +125,7 @@ export class MultiClusterPostgres extends EventEmitter {
       cache: useCache = false,
       cacheTtl,
       cacheKey,
-      operation = this._detectOperation(sql)
+      operation = this._detectOperation(sql),
     } = options;
 
     // Tenta cache primeiro (apenas para reads)
@@ -155,25 +156,24 @@ export class MultiClusterPostgres extends EventEmitter {
           ttl: cacheTtl,
           tags: schema ? [schema] : undefined,
           schema,
-          cluster: clusterId
+          cluster: clusterId,
         });
       }
 
-      this.emit('queryExecuted', { 
-        sql, 
-        params, 
-        duration, 
-        clusterId: result.clusterId || 'unknown' 
+      this.emit('queryExecuted', {
+        sql,
+        params,
+        duration,
+        clusterId: result.clusterId || 'unknown',
       });
 
       return result;
-
     } catch (error) {
-      this.emit('queryError', { 
-        sql, 
-        params, 
-        error: error as Error, 
-        clusterId: clusterId || 'unknown' 
+      this.emit('queryError', {
+        sql,
+        params,
+        error: error as Error,
+        clusterId: clusterId || 'unknown',
       });
       throw error;
     }
@@ -191,7 +191,7 @@ export class MultiClusterPostgres extends EventEmitter {
    * Inicia transação (simples ou distribuída)
    */
   async beginTransaction(
-    schemas: string | string[], 
+    schemas: string | string[],
     options: TransactionOptions = {}
   ): Promise<string> {
     this._ensureInitialized();
@@ -222,7 +222,7 @@ export class MultiClusterPostgres extends EventEmitter {
     return this.transactionManager.execute<T>(transactionId, {
       sql,
       params,
-      ...options
+      ...options,
     });
   }
 
@@ -266,13 +266,12 @@ export class MultiClusterPostgres extends EventEmitter {
       const context: TransactionContext = {
         query: <R = any>(sql: string, params?: QueryParam[], opts?: QueryOptions) =>
           this.executeInTransaction<R>(transactionId, sql, params || [], opts || {}),
-        transactionId
+        transactionId,
       };
 
       const result = await callback(context);
       await this.commitTransaction(transactionId);
       return result;
-
     } catch (error) {
       await this.rollbackTransaction(transactionId);
       throw error;
@@ -287,7 +286,7 @@ export class MultiClusterPostgres extends EventEmitter {
 
     const mapping: SchemaMapping = {
       clusterId,
-      ...options
+      ...options,
     };
 
     this.clusterConfig.mapSchemaToCluster(schema, clusterId, options);
@@ -334,15 +333,18 @@ export class MultiClusterPostgres extends EventEmitter {
     const transactionMetrics = this.transactionManager?.getMetrics();
 
     const totalQueries = Object.values(clusterMetrics).reduce(
-      (sum, cluster) => sum + cluster.queries.total, 0
+      (sum, cluster) => sum + cluster.queries.total,
+      0
     );
 
     const totalErrors = Object.values(clusterMetrics).reduce(
-      (sum, cluster) => sum + cluster.queries.errors, 0
+      (sum, cluster) => sum + cluster.queries.errors,
+      0
     );
 
     const avgResponseTime = Object.values(clusterMetrics).reduce(
-      (sum, cluster, _, arr) => sum + (cluster.queries.avgResponseTime / arr.length), 0
+      (sum, cluster, _, arr) => sum + cluster.queries.avgResponseTime / arr.length,
+      0
     );
 
     return {
@@ -352,7 +354,7 @@ export class MultiClusterPostgres extends EventEmitter {
       uptime: process.uptime(),
       totalQueries,
       avgResponseTime,
-      errorRate: totalQueries > 0 ? (totalErrors / totalQueries) * 100 : 0
+      errorRate: totalQueries > 0 ? (totalErrors / totalQueries) * 100 : 0,
     };
   }
 
@@ -378,7 +380,7 @@ export class MultiClusterPostgres extends EventEmitter {
           uptime: 0,
           connections: { active: 0, idle: 0, total: 0 },
           queries: { total: 0, successful: 0, failed: 0, avgResponseTime: 0 },
-          error: (error as Error).message
+          error: (error as Error).message,
         };
       }
     }
@@ -428,7 +430,6 @@ export class MultiClusterPostgres extends EventEmitter {
       this.emit('closed');
 
       console.log('MultiClusterPostgres closed');
-
     } catch (error) {
       this.emit('error', error as Error);
       throw error;
@@ -487,10 +488,10 @@ export class MultiClusterPostgres extends EventEmitter {
       const configs = await this.clusterConfig.loadConfig();
       await this.clusterManager.updateConfig(configs);
       this._mapSchemasFromConfig(configs);
-      
+
       this.emit('configReloaded', {
         clusters: this.clusterManager.getClusters().size,
-        schemas: this.schemas.size
+        schemas: this.schemas.size,
       });
     } catch (error) {
       this.emit('error', error as Error);
@@ -507,7 +508,7 @@ export class MultiClusterPostgres extends EventEmitter {
             clusterId,
             shardKey: config.shardKey,
             cacheStrategy: config.cacheStrategy || 'conservative',
-            priority: config.priority || 1
+            priority: config.priority || 1,
           });
         }
       }
@@ -523,16 +524,20 @@ export class MultiClusterPostgres extends EventEmitter {
   private _detectOperation(sql: string): 'read' | 'write' {
     const normalizedSql = sql.trim().toLowerCase();
 
-    if (normalizedSql.startsWith('select') ||
-        normalizedSql.startsWith('with') ||
-        normalizedSql.startsWith('explain')) {
+    if (
+      normalizedSql.startsWith('select') ||
+      normalizedSql.startsWith('with') ||
+      normalizedSql.startsWith('explain')
+    ) {
       return 'read';
     }
 
-    if (normalizedSql.startsWith('insert') ||
-        normalizedSql.startsWith('update') ||
-        normalizedSql.startsWith('delete') ||
-        normalizedSql.startsWith('merge')) {
+    if (
+      normalizedSql.startsWith('insert') ||
+      normalizedSql.startsWith('update') ||
+      normalizedSql.startsWith('delete') ||
+      normalizedSql.startsWith('merge')
+    ) {
       return 'write';
     }
 
@@ -553,10 +558,9 @@ export class MultiClusterPostgres extends EventEmitter {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36);
   }
-
 }

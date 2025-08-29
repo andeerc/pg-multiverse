@@ -41,7 +41,7 @@ export class CacheFactory {
     try {
       const primaryProvider = await this.createProvider(config);
       await primaryProvider.initialize();
-      
+
       // If fallback is enabled, wrap the primary provider
       if (config.fallback?.enabled && config.provider !== 'memory') {
         return this.createFallbackProvider(primaryProvider, config);
@@ -51,7 +51,10 @@ export class CacheFactory {
     } catch (error) {
       // If primary provider fails and fallback is enabled, use fallback
       if (config.fallback?.enabled) {
-        console.warn(`Primary cache provider failed, falling back to ${config.fallback.provider}:`, error);
+        console.warn(
+          `Primary cache provider failed, falling back to ${config.fallback.provider}:`,
+          error
+        );
         const fallbackConfig: CacheProviderConfig = {
           ...config,
           provider: config.fallback.provider,
@@ -167,8 +170,10 @@ export class CacheFactory {
       errors.push('Redis db must be a non-negative number');
     }
 
-    if (redis.connectTimeout !== undefined && 
-        (typeof redis.connectTimeout !== 'number' || redis.connectTimeout <= 0)) {
+    if (
+      redis.connectTimeout !== undefined &&
+      (typeof redis.connectTimeout !== 'number' || redis.connectTimeout <= 0)
+    ) {
       errors.push('connectTimeout must be a positive number');
     }
 
@@ -285,19 +290,19 @@ class FallbackCacheProvider extends EventEmitter implements CacheProvider {
   }
 
   async invalidateBySchema(schema: string): Promise<number> {
-    return this.invalidateFromBoth((provider) => provider.invalidateBySchema(schema));
+    return this.invalidateFromBoth(provider => provider.invalidateBySchema(schema));
   }
 
   async invalidateByTags(tags: string[]): Promise<number> {
-    return this.invalidateFromBoth((provider) => provider.invalidateByTags(tags));
+    return this.invalidateFromBoth(provider => provider.invalidateByTags(tags));
   }
 
   async invalidateByCluster(cluster: string): Promise<number> {
-    return this.invalidateFromBoth((provider) => provider.invalidateByCluster(cluster));
+    return this.invalidateFromBoth(provider => provider.invalidateByCluster(cluster));
   }
 
   async invalidateByPattern(pattern: RegExp): Promise<number> {
-    return this.invalidateFromBoth((provider) => provider.invalidateByPattern(pattern));
+    return this.invalidateFromBoth(provider => provider.invalidateByPattern(pattern));
   }
 
   getStats() {
@@ -312,8 +317,9 @@ class FallbackCacheProvider extends EventEmitter implements CacheProvider {
     return {
       hits: primaryStats.hits + fallbackStats.hits,
       misses: primaryStats.misses + fallbackStats.misses,
-      hitRate: (primaryStats.hits + fallbackStats.hits) / 
-               (primaryStats.hits + primaryStats.misses + fallbackStats.hits + fallbackStats.misses),
+      hitRate:
+        (primaryStats.hits + fallbackStats.hits) /
+        (primaryStats.hits + primaryStats.misses + fallbackStats.hits + fallbackStats.misses),
       totalSize: primaryStats.totalSize + fallbackStats.totalSize,
       itemCount: primaryStats.itemCount + fallbackStats.itemCount,
       evictions: primaryStats.evictions + fallbackStats.evictions,
@@ -323,7 +329,7 @@ class FallbackCacheProvider extends EventEmitter implements CacheProvider {
 
   async clear(): Promise<void> {
     const promises: Promise<void>[] = [this.primaryProvider.clear()];
-    
+
     if (this.fallbackProvider) {
       promises.push(this.fallbackProvider.clear());
     }
@@ -337,7 +343,7 @@ class FallbackCacheProvider extends EventEmitter implements CacheProvider {
     }
 
     const promises: Promise<void>[] = [this.primaryProvider.close()];
-    
+
     if (this.fallbackProvider) {
       promises.push(this.fallbackProvider.close());
     }
@@ -384,7 +390,7 @@ class FallbackCacheProvider extends EventEmitter implements CacheProvider {
   }
 
   private setupEventForwarding(): void {
-    this.primaryProvider.on('error', (error) => this.emit('error', error));
+    this.primaryProvider.on('error', error => this.emit('error', error));
     this.primaryProvider.on('connected', () => this.emit('connected'));
     this.primaryProvider.on('disconnected', () => {
       this.emit('disconnected');

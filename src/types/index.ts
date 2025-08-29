@@ -211,7 +211,11 @@ export interface TransactionCallback<T> {
 }
 
 export interface TransactionContext {
-  query<T = any>(sql: string, params?: QueryParam[], options?: QueryOptions): Promise<QueryResult<T>>;
+  query<T = any>(
+    sql: string,
+    params?: QueryParam[],
+    options?: QueryOptions
+  ): Promise<QueryResult<T>>;
   transactionId: string;
 }
 
@@ -332,12 +336,26 @@ export interface MultiClusterEvents {
   clusterDown: (data: { clusterId: string; reason: string; health: ClusterHealth }) => void;
   clusterUp: (data: { clusterId: string; health: ClusterHealth }) => void;
   clusterRecovered: (data: { clusterId: string; downtime: number }) => void;
-  queryExecuted: (data: { sql: string; params: QueryParam[]; duration: number; clusterId: string }) => void;
-  queryError: (data: { sql: string; params: QueryParam[]; error: Error; clusterId: string }) => void;
+  queryExecuted: (data: {
+    sql: string;
+    params: QueryParam[];
+    duration: number;
+    clusterId: string;
+  }) => void;
+  queryError: (data: {
+    sql: string;
+    params: QueryParam[];
+    error: Error;
+    clusterId: string;
+  }) => void;
   cacheHit: (data: { key: string; schema?: string; clusterId?: string }) => void;
   cacheMiss: (data: { key: string; schema?: string; clusterId?: string }) => void;
   cacheEviction: (data: { key: string; reason: 'ttl' | 'size' | 'manual' }) => void;
-  transactionStarted: (data: { transactionId: string; schemas: string[]; clusters: string[] }) => void;
+  transactionStarted: (data: {
+    transactionId: string;
+    schemas: string[];
+    clusters: string[];
+  }) => void;
   transactionCommitted: (data: { transactionId: string; duration: number }) => void;
   transactionAborted: (data: { transactionId: string; reason: string; duration: number }) => void;
   schemaRegistered: (data: { schema: string; clusterId: string; options: SchemaMapping }) => void;
@@ -387,31 +405,39 @@ export interface ConnectionTestResult {
 // ==================== TYPE GUARDS ====================
 
 export function isQueryResult<T>(obj: any): obj is QueryResult<T> {
-  return obj &&
+  return (
+    obj &&
     Array.isArray(obj.rows) &&
     typeof obj.rowCount === 'number' &&
-    typeof obj.command === 'string';
+    typeof obj.command === 'string'
+  );
 }
 
 export function isDatabaseConnection(obj: any): obj is DatabaseConnection {
-  return obj &&
+  return (
+    obj &&
     typeof obj.host === 'string' &&
     typeof obj.port === 'number' &&
     typeof obj.database === 'string' &&
     typeof obj.user === 'string' &&
-    typeof obj.password === 'string';
+    typeof obj.password === 'string'
+  );
 }
 
 export function isClusterConfig(obj: any): obj is ClusterConfig {
-  return obj &&
+  return (
+    obj &&
     typeof obj.id === 'string' &&
     Array.isArray(obj.schemas) &&
-    isDatabaseConnection(obj.primary);
+    isDatabaseConnection(obj.primary)
+  );
 }
 
 // ==================== TYPED EVENT EMITTER ====================
 
-export interface TypedEventEmitter<T extends Record<string, (...args: any[]) => void> & { [K: string]: (...args: any[]) => void }> {
+export interface TypedEventEmitter<
+  T extends Record<string, (...args: any[]) => void> & { [K: string]: (...args: any[]) => void },
+> {
   on<K extends keyof T>(event: K, listener: T[K]): this;
   once<K extends keyof T>(event: K, listener: T[K]): this;
   emit<K extends keyof T>(event: K, ...args: Parameters<T[K]>): boolean;

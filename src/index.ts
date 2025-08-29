@@ -5,14 +5,14 @@ export { ClusterConfig as ClusterConfigManager } from './cluster/ClusterConfig';
 export { ConnectionPool } from './cluster/ConnectionPool';
 
 // Exportações de cache
-export { 
-  CacheProvider, 
-  CacheSetOptions, 
-  CacheProviderConfig, 
+export {
+  CacheProvider,
+  CacheSetOptions,
+  CacheProviderConfig,
   RedisConfig,
   MemoryCache,
   RedisCache,
-  CacheFactory 
+  CacheFactory,
 } from './cache';
 
 // Re-exporta todos os tipos
@@ -29,7 +29,7 @@ export const VERSION = '1.0.0';
 
 /**
  * Multi-Cluster PostgreSQL para Node.js com TypeScript
- * 
+ *
  * Características:
  * - Multi-schema e multi-cluster support
  * - Read/Write splitting inteligente
@@ -39,11 +39,11 @@ export const VERSION = '1.0.0';
  * - Health checking e failover automático
  * - Métricas detalhadas
  * - Type-safe queries com TypeScript
- * 
+ *
  * @example
  * ```typescript
  * import { MultiClusterPostgres } from 'pg-multiverse';
- * 
+ *
  * // Configuração com Redis cache
  * const postgres = new MultiClusterPostgres({
  *   enableCache: true,
@@ -62,7 +62,7 @@ export const VERSION = '1.0.0';
  *     }
  *   }
  * });
- * 
+ *
  * await postgres.initialize({
  *   users_cluster: {
  *     schemas: ['users', 'auth'],
@@ -82,30 +82,30 @@ export const VERSION = '1.0.0';
  *     }]
  *   }
  * });
- * 
+ *
  * // Type-safe query com cache Redis
  * interface User {
  *   id: number;
  *   email: string;
  *   name: string;
  * }
- * 
+ *
  * const users = await postgres.query<User>(
  *   'SELECT * FROM users WHERE active = $1',
  *   [true],
- *   { 
- *     schema: 'users', 
+ *   {
+ *     schema: 'users',
  *     cache: true,
  *     cacheTtl: 300000 // 5 minutes
  *   }
  * );
- * 
+ *
  * // Distributed transaction
  * await postgres.withTransaction(['users', 'orders'], async (tx) => {
  *   await tx.query('UPDATE users SET last_order = NOW() WHERE id = $1', [userId]);
  *   await tx.query('INSERT INTO orders (user_id, total) VALUES ($1, $2)', [userId, total]);
  * });
- * 
+ *
  * // Cache invalidation
  * await postgres.invalidateCache({ schema: 'users' });
  * ```

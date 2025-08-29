@@ -1,10 +1,6 @@
 import { EventEmitter } from 'events';
 import { Pool, PoolClient, PoolConfig } from 'pg';
-import {
-  DatabaseConnection,
-  ConnectionPoolConfig,
-  TypedEventEmitter
-} from '../types';
+import { DatabaseConnection, ConnectionPoolConfig, TypedEventEmitter } from '../types';
 
 interface ConnectionPoolEvents {
   connectionCreated: (poolId: string) => void;
@@ -39,11 +35,14 @@ export class ConnectionPool extends EventEmitter {
   private isClosed: boolean = false;
   private metrics: PoolMetrics;
 
-  constructor(config: DatabaseConnection & ConnectionPoolConfig & {
-    clusterId: string;
-    role: 'primary' | 'replica';
-    replicaIndex?: number;
-  }) {
+  constructor(
+    config: DatabaseConnection &
+      ConnectionPoolConfig & {
+        clusterId: string;
+        role: 'primary' | 'replica';
+        replicaIndex?: number;
+      }
+  ) {
     super();
 
     this.config = {
@@ -53,7 +52,7 @@ export class ConnectionPool extends EventEmitter {
       createTimeoutMillis: 10000,
       idleTimeoutMillis: 300000,
       warmupConnections: true,
-      ...config
+      ...config,
     };
 
     this.clusterId = config.clusterId;
@@ -69,7 +68,7 @@ export class ConnectionPool extends EventEmitter {
       active: 0,
       idle: 0,
       waiting: 0,
-      total: 0
+      total: 0,
     };
 
     this._createPool();
@@ -87,10 +86,10 @@ export class ConnectionPool extends EventEmitter {
     try {
       const client = await this.pool.connect();
       const wrappedClient = this._wrapClient(client);
-      
+
       this.metrics.acquired++;
       this.emit('connectionAcquired', this.poolId);
-      
+
       return wrappedClient;
     } catch (error) {
       this.emit('error', error as Error, this.poolId);
@@ -145,8 +144,8 @@ export class ConnectionPool extends EventEmitter {
         min: this.config.min || 0,
         max: this.config.max || 10,
         idle: this.pool.idleCount,
-        waiting: this.pool.waitingCount
-      }
+        waiting: this.pool.waitingCount,
+      },
     };
   }
 
@@ -168,7 +167,7 @@ export class ConnectionPool extends EventEmitter {
       role: this.role,
       replicaIndex: this.replicaIndex,
       isReady: this.isReady,
-      isClosed: this.isClosed
+      isClosed: this.isClosed,
     };
   }
 
@@ -228,7 +227,7 @@ export class ConnectionPool extends EventEmitter {
       min: this.config.min,
       max: this.config.max,
       idleTimeoutMillis: this.config.idleTimeoutMillis,
-      ssl: this.config.ssl
+      ssl: this.config.ssl,
     };
 
     if (this.config.searchPath) {
@@ -259,14 +258,13 @@ export class ConnectionPool extends EventEmitter {
   private async _initialize(): Promise<void> {
     try {
       await this.testConnection();
-      
+
       if (this.config.warmupConnections) {
         await this.warmup();
       }
 
       this.isReady = true;
       this.emit('poolReady', this.poolId);
-      
     } catch (error) {
       this.emit('error', error as Error, this.poolId);
     }
@@ -300,7 +298,7 @@ export class ConnectionPool extends EventEmitter {
 
   private _wrapClient(client: PoolClient): PoolClient {
     const originalRelease = client.release.bind(client);
-    
+
     client.release = (err?: Error | boolean) => {
       this.metrics.released++;
       this.emit('connectionReleased', this.poolId);
@@ -311,11 +309,11 @@ export class ConnectionPool extends EventEmitter {
   }
 
   private _generatePoolId(): string {
-    const suffix = this.role === 'replica' && this.replicaIndex !== undefined 
-      ? `_replica_${this.replicaIndex}`
-      : `_${this.role}`;
-    
+    const suffix =
+      this.role === 'replica' && this.replicaIndex !== undefined
+        ? `_replica_${this.replicaIndex}`
+        : `_${this.role}`;
+
     return `${this.clusterId}${suffix}`;
   }
-
 }

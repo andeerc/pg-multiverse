@@ -5,7 +5,7 @@ import {
   ClusterConfig as ClusterConfigType,
   ValidationResult,
   SchemaMapping,
-  TypedEventEmitter
+  TypedEventEmitter,
 } from '../types';
 
 interface ClusterConfigEvents {
@@ -47,7 +47,7 @@ export class ClusterConfig extends EventEmitter {
     try {
       const configData = readFileSync(this.configPath, 'utf8');
       this.config = JSON.parse(configData);
-      
+
       const validation = this.validate();
       if (!validation.valid) {
         this.emit('validationError', validation.errors);
@@ -56,7 +56,7 @@ export class ClusterConfig extends EventEmitter {
 
       this.lastModified = new Date();
       this.emit('configLoaded', this.config);
-      
+
       return this.config;
     } catch (error) {
       const err = error as Error;
@@ -84,7 +84,6 @@ export class ClusterConfig extends EventEmitter {
 
       writeFileSync(targetPath, JSON.stringify(config, null, 2), 'utf8');
       this.emit('configSaved', targetPath);
-      
     } catch (error) {
       const err = error as Error;
       this.emit('error', err);
@@ -116,7 +115,11 @@ export class ClusterConfig extends EventEmitter {
   /**
    * Mapeia schema para cluster
    */
-  mapSchemaToCluster(schema: string, clusterId: string, options: Partial<SchemaMapping> = {}): void {
+  mapSchemaToCluster(
+    schema: string,
+    clusterId: string,
+    options: Partial<SchemaMapping> = {}
+  ): void {
     if (!this.config[clusterId]) {
       throw new Error(`Cluster ${clusterId} not found in config`);
     }
@@ -189,14 +192,20 @@ export class ClusterConfig extends EventEmitter {
         errors.push(`Cluster ${clusterId}: No primary connection configured`);
       } else {
         // Valida conexão primária
-        const primaryErrors = this._validateConnection(clusterConfig.primary, `${clusterId}.primary`);
+        const primaryErrors = this._validateConnection(
+          clusterConfig.primary,
+          `${clusterId}.primary`
+        );
         errors.push(...primaryErrors);
       }
 
       // Valida réplicas se configuradas
       if (clusterConfig.replicas && Array.isArray(clusterConfig.replicas)) {
         clusterConfig.replicas.forEach((replica: any, index: number) => {
-          const replicaErrors = this._validateConnection(replica, `${clusterId}.replicas[${index}]`);
+          const replicaErrors = this._validateConnection(
+            replica,
+            `${clusterId}.replicas[${index}]`
+          );
           errors.push(...replicaErrors);
         });
       } else if (!clusterConfig.replicas) {
@@ -231,8 +240,8 @@ export class ClusterConfig extends EventEmitter {
       }
     }
 
-    const duplicateSchemas = allSchemas.filter((schema, index, arr) => 
-      arr.indexOf(schema) !== index
+    const duplicateSchemas = allSchemas.filter(
+      (schema, index, arr) => arr.indexOf(schema) !== index
     );
 
     if (duplicateSchemas.length > 0) {
@@ -242,7 +251,7 @@ export class ClusterConfig extends EventEmitter {
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -277,7 +286,7 @@ export class ClusterConfig extends EventEmitter {
           this._handleConfigChange();
         }
       });
-      
+
       this.isWatching = true;
     } catch (error) {
       this.emit('error', error as Error);
@@ -307,7 +316,11 @@ export class ClusterConfig extends EventEmitter {
 
     if (!connection.port) {
       errors.push(`${path}: port is required`);
-    } else if (typeof connection.port !== 'number' || connection.port < 1 || connection.port > 65535) {
+    } else if (
+      typeof connection.port !== 'number' ||
+      connection.port < 1 ||
+      connection.port > 65535
+    ) {
       errors.push(`${path}: port must be a number between 1 and 65535`);
     }
 
@@ -323,8 +336,10 @@ export class ClusterConfig extends EventEmitter {
       errors.push(`${path}: password is required`);
     }
 
-    if (connection.maxConnections !== undefined && 
-        (typeof connection.maxConnections !== 'number' || connection.maxConnections < 1)) {
+    if (
+      connection.maxConnections !== undefined &&
+      (typeof connection.maxConnections !== 'number' || connection.maxConnections < 1)
+    ) {
       errors.push(`${path}: maxConnections must be a positive number`);
     }
 
@@ -366,7 +381,11 @@ export class ClusterConfig extends EventEmitter {
 
     if (!loadBalancing.strategy) {
       errors.push(`${path}: strategy is required`);
-    } else if (!['round_robin', 'weighted', 'least_connections', 'response_time', 'health_aware'].includes(loadBalancing.strategy)) {
+    } else if (
+      !['round_robin', 'weighted', 'least_connections', 'response_time', 'health_aware'].includes(
+        loadBalancing.strategy
+      )
+    ) {
       errors.push(`${path}: invalid strategy`);
     }
 
@@ -376,5 +395,4 @@ export class ClusterConfig extends EventEmitter {
 
     return errors;
   }
-
 }

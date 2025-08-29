@@ -19,14 +19,14 @@ export class HealthChecker extends EventEmitter {
 
   constructor(config: ClusterManagerConfig = {}) {
     super();
-    
+
     this.config = {
       healthCheckInterval: 30000,
       retryAttempts: 3,
       retryDelay: 1000,
       maxFailuresBeforeMarkDown: 3,
       recoveryCheckInterval: 60000,
-      ...config
+      ...config,
     };
   }
 
@@ -56,7 +56,7 @@ export class HealthChecker extends EventEmitter {
     if (!this.isRunning) return;
 
     this.isRunning = false;
-    
+
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = undefined;
@@ -121,7 +121,6 @@ export class HealthChecker extends EventEmitter {
       }
 
       responseTime = Date.now() - startTime;
-
     } catch (err) {
       healthy = false;
       error = (err as Error).message;
@@ -144,15 +143,15 @@ export class HealthChecker extends EventEmitter {
       uptime: previousHealth ? Date.now() - previousHealth.lastCheck.getTime() : 0,
       connections,
       queries,
-      error
+      error,
     };
 
     // Atualiza status se mudou
     if (wasHealthy && !healthy) {
-      this.emit('clusterDown', { 
-        clusterId, 
+      this.emit('clusterDown', {
+        clusterId,
         reason: error || 'Health check failed',
-        health 
+        health,
       });
     } else if (!wasHealthy && healthy && previousHealth) {
       const downtime = Date.now() - previousHealth.lastCheck.getTime();
@@ -200,7 +199,7 @@ export class HealthChecker extends EventEmitter {
       total: 0,
       successful: 0,
       failed: 0,
-      avgResponseTime: 0
+      avgResponseTime: 0,
     };
   }
 
@@ -213,8 +212,7 @@ export class HealthChecker extends EventEmitter {
       failureCount: 0,
       uptime: 0,
       connections: { active: 0, idle: 0, total: 0 },
-      queries: { total: 0, successful: 0, failed: 0, avgResponseTime: 0 }
+      queries: { total: 0, successful: 0, failed: 0, avgResponseTime: 0 },
     };
   }
-
 }

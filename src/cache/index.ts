@@ -1,5 +1,14 @@
 // Cache interfaces
-export { CacheProvider, CacheSetOptions, CacheProviderConfig, RedisConfig, RedisClusterNode, RedisSentinelNode, CacheEventType, CacheEvent } from './interfaces/CacheProvider';
+export {
+  CacheProvider,
+  CacheSetOptions,
+  CacheProviderConfig,
+  RedisConfig,
+  RedisClusterNode,
+  RedisSentinelNode,
+  CacheEventType,
+  CacheEvent,
+} from './interfaces/CacheProvider';
 
 // Cache providers
 export { MemoryCache } from './providers/MemoryCache';

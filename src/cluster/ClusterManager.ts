@@ -13,7 +13,7 @@ import {
   ReadPreference,
   OperationType,
   TransactionOptions,
-  TypedEventEmitter
+  TypedEventEmitter,
 } from '../types';
 import { ConnectionPool } from './ConnectionPool';
 import { HealthChecker } from './HealthChecker';
@@ -64,12 +64,15 @@ interface ClusterStats {
   activeConnections: number;
   totalQueries: number;
   failedQueries: number;
-  clusterStats: Map<string, {
-    queries: number;
-    errors: number;
-    avgResponseTime: number;
-    connections: number;
-  }>;
+  clusterStats: Map<
+    string,
+    {
+      queries: number;
+      errors: number;
+      avgResponseTime: number;
+      connections: number;
+    }
+  >;
 }
 
 /**
@@ -95,7 +98,7 @@ export class ClusterManager extends EventEmitter {
       retryDelay: 1000,
       maxFailuresBeforeMarkDown: 3,
       recoveryCheckInterval: 60000,
-      ...config
+      ...config,
     };
 
     this.clusters = new Map<string, ClusterInfo>();
@@ -109,7 +112,7 @@ export class ClusterManager extends EventEmitter {
       activeConnections: 0,
       totalQueries: 0,
       failedQueries: 0,
-      clusterStats: new Map()
+      clusterStats: new Map(),
     };
 
     this._setupEventHandlers();
@@ -176,7 +179,7 @@ export class ClusterManager extends EventEmitter {
       schema,
       operation = 'read',
       consistencyLevel = 'eventual' as ConsistencyLevel,
-      clusterId
+      clusterId,
     } = options;
 
     if (!this.isInitialized) {
@@ -195,8 +198,9 @@ export class ClusterManager extends EventEmitter {
 
     // Se não especificou cluster nem schema, usa o primeiro disponível
     if (!targetCluster) {
-      const availableClusters = Array.from(this.clusters.keys())
-        .filter(id => this.clusters.get(id)?.status === 'active');
+      const availableClusters = Array.from(this.clusters.keys()).filter(
+        id => this.clusters.get(id)?.status === 'active'
+      );
 
       if (availableClusters.length === 0) {
         throw new Error('No active clusters available');
@@ -218,10 +222,7 @@ export class ClusterManager extends EventEmitter {
 
       if (useReplica && cluster.pools.replicas.length > 0) {
         // Seleciona replica usando load balancer
-        const replicaIndex = this.loadBalancer.selectReplica(
-          cluster.pools.replicas,
-          options
-        );
+        const replicaIndex = this.loadBalancer.selectReplica(cluster.pools.replicas, options);
         pool = cluster.pools.replicas[replicaIndex];
       } else if (cluster.pools.primary) {
         // Usa primary
@@ -236,12 +237,11 @@ export class ClusterManager extends EventEmitter {
       const wrappedConnection = this._wrapConnection(connection, {
         clusterId: targetCluster,
         schema,
-        pool: pool.getId()
+        pool: pool.getId(),
       }) as WrappedConnection;
 
       this.stats.activeConnections++;
       return wrappedConnection;
-
     } catch (error) {
       this.stats.failedQueries++;
       this.emit('connectionError', { clusterId: targetCluster, error: error as Error });
@@ -261,7 +261,7 @@ export class ClusterManager extends EventEmitter {
 
     try {
       const startTime = Date.now();
-      const result = await connection.query(sql, params) as QueryResult<T>;
+      const result = (await connection.query(sql, params)) as QueryResult<T>;
       const endTime = Date.now();
 
       // Atualiza estatísticas
@@ -270,7 +270,7 @@ export class ClusterManager extends EventEmitter {
 
       return {
         ...result,
-        clusterId: connection._clusterMetadata.clusterId
+        clusterId: connection._clusterMetadata.clusterId,
       };
     } catch (error) {
       this.stats.failedQueries++;
@@ -279,7 +279,7 @@ export class ClusterManager extends EventEmitter {
         params,
         options,
         error: error as Error,
-        cluster: connection._clusterMetadata.clusterId
+        cluster: connection._clusterMetadata.clusterId,
       });
       throw error;
     } finally {
@@ -320,7 +320,7 @@ export class ClusterManager extends EventEmitter {
     for (const clusterId of involvedClusters) {
       const result = await this._singleClusterTransaction(callback, {
         ...options,
-        clusterId
+        clusterId,
       });
       results.push(result);
     }
@@ -353,22 +353,22 @@ export class ClusterManager extends EventEmitter {
           writes: 0, // Calculado baseado no histórico
           cached: 0, // Calculado pelo cache
           avgResponseTime: stats?.avgResponseTime || 0,
-          errors: stats?.errors || 0
+          errors: stats?.errors || 0,
         },
         connections: {
           active: health.connections.active,
           idle: health.connections.idle,
           max: health.connections.total,
           created: 0, // Tracked by pools
-          destroyed: 0 // Tracked by pools
+          destroyed: 0, // Tracked by pools
         },
         cache: {
           hits: 0, // Provided by cache layer
           misses: 0, // Provided by cache layer
-          hitRate: 0 // Calculated by cache layer
+          hitRate: 0, // Calculated by cache layer
         },
         uptime: health.uptime,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
     }
 
@@ -387,8 +387,8 @@ export class ClusterManager extends EventEmitter {
         schemas: cluster.config.schemas,
         primaryActive: !!cluster.pools.primary,
         replicasActive: cluster.pools.replicas.length,
-        stats: this.stats.clusterStats.get(id)
-      }))
+        stats: this.stats.clusterStats.get(id),
+      })),
     };
   }
 
@@ -433,7 +433,7 @@ export class ClusterManager extends EventEmitter {
     this.emit('failover', {
       clusterId,
       newPrimary: newPrimary.getId(),
-      oldPrimary: oldPrimary?.getId()
+      oldPrimary: oldPrimary?.getId(),
     });
 
     console.log(`Failover completed for cluster ${clusterId}`);
@@ -449,8 +449,7 @@ export class ClusterManager extends EventEmitter {
     await this.healthChecker.stop();
 
     // Fecha todos os pools
-    const closePromises = Array.from(this.connectionPools.values())
-      .map(pool => pool.close());
+    const closePromises = Array.from(this.connectionPools.values()).map(pool => pool.close());
 
     await Promise.all(closePromises);
 
@@ -493,7 +492,7 @@ export class ClusterManager extends EventEmitter {
       replicas: [],
       pools: {
         primary: null,
-        replicas: []
+        replicas: [],
       },
       status: 'initializing',
       config: {
@@ -506,8 +505,8 @@ export class ClusterManager extends EventEmitter {
         replicas: config.replicas || [],
         sharding: config.sharding,
         loadBalancing: config.loadBalancing,
-        connectionPool: config.connectionPool
-      }
+        connectionPool: config.connectionPool,
+      },
     };
 
     // Configura conexão primária
@@ -515,7 +514,7 @@ export class ClusterManager extends EventEmitter {
       const primaryPool = new ConnectionPool({
         ...config.primary,
         clusterId,
-        role: 'primary'
+        role: 'primary',
       });
 
       clusterInfo.primary = config.primary;
@@ -532,7 +531,7 @@ export class ClusterManager extends EventEmitter {
           ...replicaConfig,
           clusterId,
           role: 'replica',
-          replicaIndex: i
+          replicaIndex: i,
         });
 
         clusterInfo.replicas.push(replicaConfig);
@@ -554,7 +553,7 @@ export class ClusterManager extends EventEmitter {
       queries: 0,
       errors: 0,
       avgResponseTime: 0,
-      connections: 0
+      connections: 0,
     });
 
     // Testa conectividade inicial
@@ -654,7 +653,7 @@ export class ClusterManager extends EventEmitter {
   ): Promise<T> {
     const connection = await this.getConnection({
       ...options,
-      operation: 'write'
+      operation: 'write',
     });
 
     try {
@@ -676,7 +675,8 @@ export class ClusterManager extends EventEmitter {
   ): Promise<T> {
     // Implementação simplificada de 2PC (Two-Phase Commit)
     // Em produção, considere usar bibliotecas especializadas
-    throw new Error('Distributed transactions not fully implemented. Use eventual consistency for cross-cluster operations.');
+    throw new Error(
+      'Distributed transactions not fully implemented. Use eventual consistency for cross-cluster operations.'
+    );
   }
-
 }

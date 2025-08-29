@@ -17,7 +17,7 @@ export class DistributedCache extends EventEmitter {
 
   constructor(config: CacheConfig = {}) {
     super();
-    
+
     this.config = {
       maxSize: 1000,
       ttl: 300000, // 5 minutes
@@ -27,8 +27,8 @@ export class DistributedCache extends EventEmitter {
       provider: 'memory' as const,
       fallback: {
         enabled: false,
-        provider: 'memory' as const
-      }
+        provider: 'memory' as const,
+      },
     };
 
     this.stats = {
@@ -38,7 +38,7 @@ export class DistributedCache extends EventEmitter {
       totalSize: 0,
       itemCount: 0,
       evictions: 0,
-      compressionRatio: 0
+      compressionRatio: 0,
     };
 
     Object.assign(this.config, config);
@@ -55,7 +55,7 @@ export class DistributedCache extends EventEmitter {
 
   async get<T>(key: string): Promise<T | null> {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       this.stats.misses++;
       this.emit('miss', key);
@@ -85,8 +85,8 @@ export class DistributedCache extends EventEmitter {
   }
 
   async set<T>(
-    key: string, 
-    value: T, 
+    key: string,
+    value: T,
     options: {
       ttl?: number;
       tags?: string[];
@@ -119,7 +119,7 @@ export class DistributedCache extends EventEmitter {
       size,
       tags: new Set(options.tags || []),
       schema: options.schema,
-      cluster: options.cluster
+      cluster: options.cluster,
     };
 
     // Evict if necessary
@@ -135,7 +135,7 @@ export class DistributedCache extends EventEmitter {
 
   async invalidateBySchema(schema: string): Promise<number> {
     let count = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (entry.schema === schema) {
         this.cache.delete(key);
@@ -150,7 +150,7 @@ export class DistributedCache extends EventEmitter {
 
   async invalidateByTags(tags: string[]): Promise<number> {
     let count = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       const hasMatchingTag = tags.some(tag => entry.tags.has(tag));
       if (hasMatchingTag) {
@@ -166,7 +166,7 @@ export class DistributedCache extends EventEmitter {
 
   async invalidateByCluster(cluster: string): Promise<number> {
     let count = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (entry.cluster === cluster) {
         this.cache.delete(key);
@@ -181,7 +181,7 @@ export class DistributedCache extends EventEmitter {
 
   async invalidateByPattern(pattern: RegExp): Promise<number> {
     let count = 0;
-    
+
     for (const key of this.cache.keys()) {
       if (pattern.test(key)) {
         this.cache.delete(key);
@@ -201,7 +201,7 @@ export class DistributedCache extends EventEmitter {
   async clear(): Promise<void> {
     const count = this.cache.size;
     this.cache.clear();
-    
+
     this.stats.evictions += count;
     this.updateStats();
   }
@@ -214,7 +214,7 @@ export class DistributedCache extends EventEmitter {
 
     this.cache.clear();
     this.removeAllListeners();
-    
+
     console.log('DistributedCache closed');
   }
 
@@ -265,7 +265,7 @@ export class DistributedCache extends EventEmitter {
     if (typeof value === 'string') {
       return value.length * 2; // Rough estimate for UTF-16
     }
-    
+
     try {
       return JSON.stringify(value).length * 2;
     } catch {
@@ -281,9 +281,11 @@ export class DistributedCache extends EventEmitter {
 
   private updateStats(): void {
     this.stats.itemCount = this.cache.size;
-    this.stats.totalSize = Array.from(this.cache.values())
-      .reduce((sum, entry) => sum + entry.size, 0);
-    
+    this.stats.totalSize = Array.from(this.cache.values()).reduce(
+      (sum, entry) => sum + entry.size,
+      0
+    );
+
     this.updateHitRate();
   }
 
@@ -291,5 +293,4 @@ export class DistributedCache extends EventEmitter {
     const total = this.stats.hits + this.stats.misses;
     this.stats.hitRate = total > 0 ? this.stats.hits / total : 0;
   }
-
 }

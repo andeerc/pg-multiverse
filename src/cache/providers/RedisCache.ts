@@ -166,7 +166,7 @@ export class RedisCache extends EventEmitter implements CacheProvider {
 
     try {
       const data = await this.redis.get(key);
-      
+
       if (!data) {
         this.stats.misses++;
         this.emit('miss', key);
@@ -175,7 +175,7 @@ export class RedisCache extends EventEmitter implements CacheProvider {
       }
 
       const entry = await this.deserialize<CacheEntry<T>>(data);
-      
+
       // Check TTL (additional safety check)
       if (this.isExpired(entry)) {
         await this.redis.del(key);
@@ -211,7 +211,7 @@ export class RedisCache extends EventEmitter implements CacheProvider {
     try {
       const now = Date.now();
       const ttl = options.ttl || 300000; // 5 minutes default
-      
+
       const entry: CacheEntry<T> = {
         value,
         ttl: now + ttl,
@@ -303,7 +303,8 @@ export class RedisCache extends EventEmitter implements CacheProvider {
       pipeline.del(`schema:${schema}`);
 
       const results = await pipeline.exec();
-      const deletedCount = results?.filter(([err, result]: any) => !err && result === 1).length || 0;
+      const deletedCount =
+        results?.filter(([err, result]: any) => !err && result === 1).length || 0;
 
       for (const key of keys) {
         this.emit('eviction', { key, reason: 'manual' });
@@ -323,7 +324,7 @@ export class RedisCache extends EventEmitter implements CacheProvider {
 
     try {
       const allKeys = new Set<string>();
-      
+
       for (const tag of tags) {
         const keys = await this.redis.smembers(`tag:${tag}`);
         keys.forEach((key: string) => allKeys.add(key));
@@ -341,7 +342,8 @@ export class RedisCache extends EventEmitter implements CacheProvider {
       }
 
       const results = await pipeline.exec();
-      const deletedCount = results?.filter(([err, result]: any) => !err && result === 1).length || 0;
+      const deletedCount =
+        results?.filter(([err, result]: any) => !err && result === 1).length || 0;
 
       for (const key of allKeys) {
         this.emit('eviction', { key, reason: 'manual' });
@@ -370,7 +372,8 @@ export class RedisCache extends EventEmitter implements CacheProvider {
       pipeline.del(`cluster:${cluster}`);
 
       const results = await pipeline.exec();
-      const deletedCount = results?.filter(([err, result]: any) => !err && result === 1).length || 0;
+      const deletedCount =
+        results?.filter(([err, result]: any) => !err && result === 1).length || 0;
 
       for (const key of keys) {
         this.emit('eviction', { key, reason: 'manual' });
@@ -392,7 +395,7 @@ export class RedisCache extends EventEmitter implements CacheProvider {
       // Convert RegExp to Redis pattern (limited support)
       const redisPattern = this.regexToRedisPattern(pattern);
       const keys = await this.redis.keys(redisPattern);
-      
+
       if (keys.length === 0) return 0;
 
       const pipeline = this.redis.pipeline();
@@ -401,7 +404,8 @@ export class RedisCache extends EventEmitter implements CacheProvider {
       }
 
       const results = await pipeline.exec();
-      const deletedCount = results?.filter(([err, result]: any) => !err && result === 1).length || 0;
+      const deletedCount =
+        results?.filter(([err, result]: any) => !err && result === 1).length || 0;
 
       for (const key of keys) {
         this.emit('eviction', { key, reason: 'manual' });
@@ -438,7 +442,7 @@ export class RedisCache extends EventEmitter implements CacheProvider {
       this.redis.disconnect();
       this.redis = null;
     }
-    
+
     this.isConnected = false;
     this.removeAllListeners();
   }
@@ -477,12 +481,12 @@ export class RedisCache extends EventEmitter implements CacheProvider {
   private async serialize<T>(data: T): Promise<string> {
     try {
       let serialized = JSON.stringify(data);
-      
+
       if (this.config.compression === 'gzip' && serialized.length > 1024) {
         const compressed = await gzip(Buffer.from(serialized));
         serialized = `gzip:${compressed.toString('base64')}`;
       }
-      
+
       return serialized;
     } catch (error) {
       this.emit('error', error);
@@ -497,7 +501,7 @@ export class RedisCache extends EventEmitter implements CacheProvider {
         const decompressed = await gunzip(compressed);
         return JSON.parse(decompressed.toString());
       }
-      
+
       return JSON.parse(data);
     } catch (error) {
       this.emit('error', error);
@@ -509,7 +513,7 @@ export class RedisCache extends EventEmitter implements CacheProvider {
     if (typeof value === 'string') {
       return value.length * 2;
     }
-    
+
     try {
       return JSON.stringify(value).length * 2;
     } catch {
@@ -530,12 +534,12 @@ export class RedisCache extends EventEmitter implements CacheProvider {
     // Convert basic regex patterns to Redis patterns
     // This is a simplified conversion - Redis patterns are limited
     let pattern = regex.source;
-    
+
     // Replace common regex patterns with Redis equivalents
     pattern = pattern.replace(/\.\*/g, '*');
     pattern = pattern.replace(/\./g, '?');
     pattern = pattern.replace(/\[.*?\]/g, '*');
-    
+
     return `${this.config.keyPrefix || ''}${pattern}`;
   }
 }

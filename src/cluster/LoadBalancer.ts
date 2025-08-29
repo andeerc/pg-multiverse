@@ -22,19 +22,19 @@ export class LoadBalancer {
     switch (this.strategy) {
       case 'round_robin':
         return this.roundRobinSelect(replicas);
-      
+
       case 'weighted':
         return this.weightedSelect(replicas, options.weights);
-      
+
       case 'least_connections':
         return this.leastConnectionsSelect(replicas);
-      
+
       case 'response_time':
         return this.responseTimeSelect(replicas);
-      
+
       case 'health_aware':
         return this.healthAwareSelect(replicas, options);
-      
+
       default:
         return this.roundRobinSelect(replicas);
     }
@@ -47,7 +47,7 @@ export class LoadBalancer {
       totalRequests: 0,
       totalErrors: 0,
       avgResponseTime: 0,
-      distribution: Object.fromEntries(this.stats)
+      distribution: Object.fromEntries(this.stats),
     };
   }
 
@@ -69,16 +69,16 @@ export class LoadBalancer {
     }, 0);
 
     let random = Math.random() * totalWeight;
-    
+
     for (let i = 0; i < replicas.length; i++) {
       const replicaId = replicas[i].getId ? replicas[i].getId() : `replica_${i}`;
       const weight = weights[replicaId] || 1;
-      
+
       if (random <= weight) {
         this.updateStats(i);
         return i;
       }
-      
+
       random -= weight;
     }
 
@@ -125,7 +125,7 @@ export class LoadBalancer {
 
     scores.sort((a, b) => b.score - a.score);
     const selectedIndex = scores[0].index;
-    
+
     this.updateStats(selectedIndex);
     return selectedIndex;
   }

@@ -127,7 +127,7 @@ export interface RedisSentinelNode {
   port: number;
 }
 
-export type CacheEventType = 
+export type CacheEventType =
   | 'hit'
   | 'miss'
   | 'set'
