@@ -1,0 +1,317 @@
+{
+  "clusters": {
+    "users_cluster": {
+      "id": "users_cluster",
+      "primary": {
+        "host": "users-primary.db.company.com",
+        "port": 5432,
+        "database": "users_db",
+        "user": "app_user",
+        "password": "secure_password",
+        "ssl": true,
+        "maxConnections": 20
+      },
+      "replicas": [
+        {
+          "host": "users-replica-1.db.company.com",
+          "port": 5432,
+          "database": "users_db",
+          "user": "readonly_user",
+          "password": "readonly_password",
+          "ssl": true,
+          "maxConnections": 15,
+          "weight": 1,
+          "priority": 1
+        },
+        {
+          "host": "users-replica-2.db.company.com",
+          "port": 5432,
+          "database": "users_db",
+          "user": "readonly_user",
+          "password": "readonly_password",
+          "ssl": true,
+          "maxConnections": 15,
+          "weight": 2,
+          "priority": 2
+        }
+      ],
+      "schemas": ["users", "profiles", "sessions"],
+      "sharding": {
+        "enabled": false,
+        "strategy": "hash",
+        "key": null,
+        "partitions": 1
+      },
+      "settings": {
+        "readPreference": "replica",
+        "consistencyLevel": "eventual",
+        "maxConnections": 20,
+        "connectionTimeout": 5000,
+        "queryTimeout": 30000,
+        "retryAttempts": 3,
+        "retryDelay": 1000
+      },
+      "monitoring": {
+        "healthCheck": true,
+        "metrics": true,
+        "alerting": true
+      }
+    },
+    "products_cluster": {
+      "id": "products_cluster",
+      "primary": {
+        "host": "products-primary.db.company.com",
+        "port": 5432,
+        "database": "products_db",
+        "user": "app_user",
+        "password": "secure_password",
+        "ssl": true,
+        "maxConnections": 25
+      },
+      "replicas": [
+        {
+          "host": "products-replica-1.db.company.com",
+          "port": 5432,
+          "database": "products_db",
+          "user": "readonly_user",
+          "password": "readonly_password",
+          "ssl": true,
+          "maxConnections": 20,
+          "weight": 1,
+          "priority": 1
+        }
+      ],
+      "schemas": ["products", "categories", "reviews"],
+      "sharding": {
+        "enabled": false,
+        "strategy": "hash",
+        "key": null,
+        "partitions": 1
+      },
+      "settings": {
+        "readPreference": "replica",
+        "consistencyLevel": "eventual",
+        "maxConnections": 25,
+        "connectionTimeout": 5000,
+        "queryTimeout": 30000,
+        "retryAttempts": 3,
+        "retryDelay": 1000
+      },
+      "monitoring": {
+        "healthCheck": true,
+        "metrics": true,
+        "alerting": true
+      }
+    },
+    "orders_cluster": {
+      "id": "orders_cluster",
+      "primary": {
+        "host": "orders-primary.db.company.com",
+        "port": 5432,
+        "database": "orders_db",
+        "user": "app_user",
+        "password": "secure_password",
+        "ssl": true,
+        "maxConnections": 30
+      },
+      "replicas": [
+        {
+          "host": "orders-replica-1.db.company.com",
+          "port": 5432,
+          "database": "orders_db",
+          "user": "readonly_user",
+          "password": "readonly_password",
+          "ssl": true,
+          "maxConnections": 20,
+          "weight": 1,
+          "priority": 1
+        },
+        {
+          "host": "orders-replica-2.db.company.com",
+          "port": 5432,
+          "database": "orders_db",
+          "user": "readonly_user",
+          "password": "readonly_password",
+          "ssl": true,
+          "maxConnections": 20,
+          "weight": 1,
+          "priority": 2
+        }
+      ],
+      "schemas": ["orders", "payments", "shipping"],
+      "sharding": {
+        "enabled": true,
+        "strategy": "hash",
+        "key": "customer_id",
+        "partitions": 4
+      },
+      "settings": {
+        "readPreference": "replica",
+        "consistencyLevel": "strong",
+        "maxConnections": 30,
+        "connectionTimeout": 5000,
+        "queryTimeout": 45000,
+        "retryAttempts": 3,
+        "retryDelay": 1000
+      },
+      "monitoring": {
+        "healthCheck": true,
+        "metrics": true,
+        "alerting": true
+      }
+    },
+    "analytics_cluster": {
+      "id": "analytics_cluster",
+      "primary": {
+        "host": "analytics-primary.db.company.com",
+        "port": 5432,
+        "database": "analytics_db",
+        "user": "analytics_user",
+        "password": "analytics_password",
+        "ssl": true,
+        "maxConnections": 10
+      },
+      "replicas": [
+        {
+          "host": "analytics-replica-1.db.company.com",
+          "port": 5432,
+          "database": "analytics_db",
+          "user": "readonly_user",
+          "password": "readonly_password",
+          "ssl": true,
+          "maxConnections": 15,
+          "weight": 2,
+          "priority": 1
+        },
+        {
+          "host": "analytics-replica-2.db.company.com",
+          "port": 5432,
+          "database": "analytics_db",
+          "user": "readonly_user",
+          "password": "readonly_password",
+          "ssl": true,
+          "maxConnections": 15,
+          "weight": 3,
+          "priority": 1
+        }
+      ],
+      "schemas": ["events", "metrics", "reports"],
+      "sharding": {
+        "enabled": true,
+        "strategy": "range",
+        "key": "timestamp",
+        "partitions": 12,
+        "ranges": [
+          { "min": "2024-01-01", "max": "2024-01-31" },
+          { "min": "2024-02-01", "max": "2024-02-29" },
+          { "min": "2024-03-01", "max": "2024-03-31" },
+          { "min": "2024-04-01", "max": "2024-04-30" },
+          { "min": "2024-05-01", "max": "2024-05-31" },
+          { "min": "2024-06-01", "max": "2024-06-30" },
+          { "min": "2024-07-01", "max": "2024-07-31" },
+          { "min": "2024-08-01", "max": "2024-08-31" },
+          { "min": "2024-09-01", "max": "2024-09-30" },
+          { "min": "2024-10-01", "max": "2024-10-31" },
+          { "min": "2024-11-01", "max": "2024-11-30" },
+          { "min": "2024-12-01", "max": "2024-12-31" }
+        ]
+      },
+      "settings": {
+        "readPreference": "replica",
+        "consistencyLevel": "eventual",
+        "maxConnections": 10,
+        "connectionTimeout": 10000,
+        "queryTimeout": 120000,
+        "retryAttempts": 2,
+        "retryDelay": 2000
+      },
+      "monitoring": {
+        "healthCheck": true,
+        "metrics": true,
+        "alerting": true
+      }
+    }
+  },
+  "schemaMapping": {
+    "users": {
+      "clusterId": "users_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "eventual",
+      "shardingKey": null
+    },
+    "profiles": {
+      "clusterId": "users_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "strong",
+      "shardingKey": null
+    },
+    "sessions": {
+      "clusterId": "users_cluster",
+      "readPreference": "primary",
+      "consistencyLevel": "strong",
+      "shardingKey": null
+    },
+    "products": {
+      "clusterId": "products_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "eventual",
+      "shardingKey": null
+    },
+    "categories": {
+      "clusterId": "products_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "eventual",
+      "shardingKey": null
+    },
+    "reviews": {
+      "clusterId": "products_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "eventual",
+      "shardingKey": null
+    },
+    "orders": {
+      "clusterId": "orders_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "strong",
+      "shardingKey": "customer_id"
+    },
+    "payments": {
+      "clusterId": "orders_cluster",
+      "readPreference": "primary",
+      "consistencyLevel": "strong",
+      "shardingKey": "customer_id"
+    },
+    "shipping": {
+      "clusterId": "orders_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "eventual",
+      "shardingKey": "customer_id"
+    },
+    "events": {
+      "clusterId": "analytics_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "eventual",
+      "shardingKey": "timestamp"
+    },
+    "metrics": {
+      "clusterId": "analytics_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "eventual",
+      "shardingKey": "timestamp"
+    },
+    "reports": {
+      "clusterId": "analytics_cluster",
+      "readPreference": "replica",
+      "consistencyLevel": "eventual",
+      "shardingKey": null
+    }
+  },
+  "sharding": {},
+  "globalSettings": {
+    "defaultReadPreference": "replica",
+    "defaultConsistencyLevel": "eventual",
+    "connectionPoolSize": 20,
+    "healthCheckInterval": 30000,
+    "retryAttempts": 3
+  }
+}

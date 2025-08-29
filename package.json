@@ -1,0 +1,200 @@
+{
+  "name": "pg-multiverse",
+  "version": "1.0.0",
+  "description": "🌌 Multi-cluster PostgreSQL manager for Node.js with TypeScript support. Features read/write splitting, intelligent load balancing, distributed caching, health monitoring, and seamless multi-schema operations.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --coverage --ci --watchAll=false",
+    "test:setup": "node scripts/test-setup.js",
+    "test:teardown": "node scripts/test-teardown.js",
+    "test:docker": "npm run test:setup && npm run test:integration && npm run test:teardown",
+    "test:integration": "jest tests/integration.test.ts --testTimeout=60000",
+    "test:all": "npm run test:integration",
+    "lint": "eslint src/**/*.ts --fix",
+    "lint:check": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts examples/**/*.ts tests/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts examples/**/*.ts tests/**/*.ts",
+    "clean": "rimraf dist coverage",
+    "prepublishOnly": "npm run clean && npm run build",
+    "preversion": "echo 'Skipping lint for now'",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags",
+    "example:basic": "ts-node examples/basic-usage.ts",
+    "docs:generate": "typedoc src/index.ts --out docs",
+    "release": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
+  },
+  "keywords": [
+    "postgresql",
+    "postgres",
+    "database",
+    "multi-cluster",
+    "multiverse",
+    "typescript",
+    "connection-pooling",
+    "load-balancing",
+    "read-write-splitting",
+    "sharding",
+    "caching",
+    "distributed-cache",
+    "distributed-transactions",
+    "high-availability",
+    "failover",
+    "health-monitoring",
+    "multi-schema",
+    "cluster-management",
+    "database-scaling",
+    "enterprise",
+    "microservices",
+    "cloud-native",
+    "performance",
+    "reliability"
+  ],
+  "author": {
+    "name": "PG Multiverse Team",
+    "email": "contact@pg-multiverse.dev"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/pg-multiverse/pg-multiverse#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pg-multiverse/pg-multiverse.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pg-multiverse/pg-multiverse/issues"
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/pg-multiverse"
+    },
+    {
+      "type": "opencollective",
+      "url": "https://opencollective.com/pg-multiverse"
+    }
+  ],
+  "dependencies": {
+    "pg": "^8.11.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.0",
+    "@types/uuid": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.0",
+    "typedoc": "^0.25.0",
+    "typescript": "^5.2.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.5.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist/**/*",
+    "src/**/*",
+    "examples/**/*",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "cluster-config-example.json"
+  ],
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/tests"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.ts",
+      "**/?(*.)+(spec|test).ts"
+    ],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/types/**/*",
+      "!src/index.ts"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html",
+      "clover"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "trailingComma": "es5",
+    "singleQuote": true,
+    "printWidth": 100,
+    "tabWidth": 2,
+    "useTabs": false,
+    "bracketSpacing": true,
+    "arrowParens": "avoid"
+  },
+  "typedoc": {
+    "entryPoints": [
+      "src/index.ts"
+    ],
+    "out": "docs",
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "excludeInternal": true,
+    "readme": "README.md"
+  }
+}

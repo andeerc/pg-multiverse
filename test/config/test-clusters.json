@@ -1,0 +1,112 @@
+{
+  "test_cluster_1": {
+    "id": "test_cluster_1",
+    "schemas": ["users", "auth"],
+    "priority": 1,
+    "readPreference": "replica",
+    "consistencyLevel": "eventual",
+    "primary": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "test_db",
+      "user": "test_user",
+      "password": "test_password",
+      "maxConnections": 10,
+      "minConnections": 2,
+      "ssl": false
+    },
+    "replicas": [
+      {
+        "host": "localhost",
+        "port": 5437,
+        "database": "test_db",
+        "user": "test_user",
+        "password": "test_password",
+        "maxConnections": 8,
+        "minConnections": 1,
+        "ssl": false,
+        "weight": 1
+      }
+    ],
+    "connectionPool": {
+      "min": 2,
+      "max": 10,
+      "acquireTimeoutMillis": 10000,
+      "idleTimeoutMillis": 30000,
+      "warmupConnections": true
+    },
+    "loadBalancing": {
+      "strategy": "round_robin",
+      "healthThreshold": 0.8
+    }
+  },
+  "test_cluster_2": {
+    "id": "test_cluster_2",
+    "schemas": ["products", "orders"],
+    "priority": 2,
+    "readPreference": "primary",
+    "consistencyLevel": "strong",
+    "primary": {
+      "host": "localhost",
+      "port": 5438,
+      "database": "test_commerce",
+      "user": "test_user",
+      "password": "test_password",
+      "maxConnections": 15,
+      "minConnections": 3,
+      "ssl": false
+    },
+    "replicas": [
+      {
+        "host": "localhost",
+        "port": 5439,
+        "database": "test_commerce",
+        "user": "test_user",
+        "password": "test_password",
+        "maxConnections": 10,
+        "minConnections": 2,
+        "ssl": false,
+        "weight": 1
+      }
+    ],
+    "connectionPool": {
+      "min": 3,
+      "max": 15,
+      "acquireTimeoutMillis": 15000,
+      "idleTimeoutMillis": 45000,
+      "warmupConnections": true
+    },
+    "loadBalancing": {
+      "strategy": "least_connections",
+      "healthThreshold": 0.9
+    }
+  },
+  "test_failover": {
+    "id": "test_failover",
+    "schemas": ["analytics", "logs"],
+    "priority": 3,
+    "readPreference": "any",
+    "consistencyLevel": "eventual",
+    "primary": {
+      "host": "localhost",
+      "port": 5440,
+      "database": "test_failover",
+      "user": "test_user",
+      "password": "test_password",
+      "maxConnections": 8,
+      "minConnections": 1,
+      "ssl": false
+    },
+    "connectionPool": {
+      "min": 1,
+      "max": 8,
+      "acquireTimeoutMillis": 5000,
+      "idleTimeoutMillis": 20000,
+      "warmupConnections": false
+    },
+    "loadBalancing": {
+      "strategy": "health_aware",
+      "healthThreshold": 0.7
+    }
+  }
+}

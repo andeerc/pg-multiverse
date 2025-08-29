@@ -1,0 +1,116 @@
+services:
+  # Primary cluster 1
+  postgres-primary-1:
+    image: postgres:15-alpine
+    container_name: pg-multiverse-primary-1
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./test/sql/init-cluster-1.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-multiverse-test
+
+  # Replica for cluster 1
+  postgres-replica-1:
+    image: postgres:15-alpine
+    container_name: pg-multiverse-replica-1
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5437:5432"
+    volumes:
+      - ./test/sql/init-cluster-1.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-multiverse-test
+
+  # Primary cluster 2 (commerce)
+  postgres-primary-2:
+    image: postgres:15-alpine
+    container_name: pg-multiverse-primary-2
+    environment:
+      POSTGRES_DB: test_commerce
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5438:5432"
+    volumes:
+      - ./test/sql/init-cluster-2.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_commerce"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-multiverse-test
+
+  # Replica for cluster 2
+  postgres-replica-2:
+    image: postgres:15-alpine
+    container_name: pg-multiverse-replica-2
+    environment:
+      POSTGRES_DB: test_commerce
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5439:5432"
+    volumes:
+      - ./test/sql/init-cluster-2.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_commerce"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-multiverse-test
+
+  # Additional test cluster for failover tests
+  postgres-failover:
+    image: postgres:15-alpine
+    container_name: pg-multiverse-failover
+    environment:
+      POSTGRES_DB: test_failover
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5440:5432"
+    volumes:
+      - ./test/sql/init-failover.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_failover"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg-multiverse-test
+
+networks:
+  pg-multiverse-test:
+    driver: bridge
+
+volumes:
+  postgres-primary-1-data:
+  postgres-replica-1-data:
+  postgres-primary-2-data:
+  postgres-replica-2-data:
+  postgres-failover-data:
