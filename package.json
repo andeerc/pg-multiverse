@@ -1,6 +1,6 @@
 {
   "name": "pg-multiverse",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "🌌 Multi-cluster PostgreSQL manager for Node.js with TypeScript support. Features read/write splitting, intelligent load balancing, distributed caching, health monitoring, and seamless multi-schema operations.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
