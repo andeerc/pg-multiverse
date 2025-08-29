@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { CacheConfig, CacheEntry, CacheStats, TypedEventEmitter } from '../types';
+import { CacheConfig, CacheEntry, CacheStats, RedisConfig, TypedEventEmitter } from '../types';
 
 interface DistributedCacheEvents {
   hit: (key: string) => void;
@@ -10,7 +10,7 @@ interface DistributedCacheEvents {
 }
 
 export class DistributedCache extends EventEmitter {
-  private config: Required<CacheConfig>;
+  private config: Required<Omit<CacheConfig, 'redis'>> & { redis?: RedisConfig };
   private cache: Map<string, CacheEntry> = new Map();
   private stats: CacheStats;
   private cleanupInterval?: NodeJS.Timeout;
@@ -23,7 +23,12 @@ export class DistributedCache extends EventEmitter {
       ttl: 300000, // 5 minutes
       enableCompression: false,
       compressionThreshold: 1024,
-      strategy: 'lru'
+      strategy: 'lru',
+      provider: 'memory' as const,
+      fallback: {
+        enabled: false,
+        provider: 'memory' as const
+      }
     };
 
     this.stats = {

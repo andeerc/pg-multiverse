@@ -11,7 +11,12 @@ class DistributedCache extends events_1.EventEmitter {
             ttl: 300000, // 5 minutes
             enableCompression: false,
             compressionThreshold: 1024,
-            strategy: 'lru'
+            strategy: 'lru',
+            provider: 'memory',
+            fallback: {
+                enabled: false,
+                provider: 'memory'
+            }
         };
         this.stats = {
             hits: 0,

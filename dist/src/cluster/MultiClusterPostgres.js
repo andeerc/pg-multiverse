@@ -6,6 +6,7 @@ const ClusterManager_1 = require("./ClusterManager");
 const ClusterConfig_1 = require("./ClusterConfig");
 const DistributedCache_1 = require("./DistributedCache");
 const DistributedTransaction_1 = require("./DistributedTransaction");
+const cache_1 = require("../cache");
 /**
  * Classe principal para gerenciamento de múltiplos clusters PostgreSQL
  * com suporte a multi-schema, caching distribuído e transações
@@ -25,7 +26,8 @@ class MultiClusterPostgres extends events_1.EventEmitter {
         };
         this.clusterManager = new ClusterManager_1.ClusterManager(config.cluster);
         this.clusterConfig = new ClusterConfig_1.ClusterConfig(config.configPath);
-        this.cache = this.config.enableCache ? new DistributedCache_1.DistributedCache(config.cache) : null;
+        this.cache = null;
+        this.legacyCache = null;
         this.transactionManager = null;
         this.schemas = new Map();
         this._setupEventHandlers();
@@ -51,8 +53,8 @@ class MultiClusterPostgres extends events_1.EventEmitter {
             // Mapeia schemas para clusters
             this._mapSchemasFromConfig(configs);
             // Inicializa cache se habilitado
-            if (this.cache) {
-                await this.cache.initialize();
+            if (this.config.enableCache) {
+                await this._initializeCache();
             }
             // Inicializa transaction manager se habilitado
             if (this.config.enableTransactions) {
@@ -78,9 +80,10 @@ class MultiClusterPostgres extends events_1.EventEmitter {
         this._ensureInitialized();
         const { schema, clusterId, cache: useCache = false, cacheTtl, cacheKey, operation = this._detectOperation(sql) } = options;
         // Tenta cache primeiro (apenas para reads)
-        if (useCache && operation === 'read' && this.cache) {
+        if (useCache && operation === 'read' && (this.cache || this.legacyCache)) {
             const key = cacheKey || this._generateCacheKey(sql, params, schema);
-            const cachedResult = await this.cache.get(key);
+            const cacheProvider = this.cache || this.legacyCache;
+            const cachedResult = await cacheProvider.get(key);
             if (cachedResult) {
                 this.emit('cacheHit', { key, schema, clusterId });
                 return cachedResult;
@@ -95,9 +98,10 @@ class MultiClusterPostgres extends events_1.EventEmitter {
             const result = await this.clusterManager.executeQuery(sql, params, options);
             const duration = Date.now() - startTime;
             // Armazena no cache se configurado
-            if (useCache && operation === 'read' && this.cache && result) {
+            if (useCache && operation === 'read' && (this.cache || this.legacyCache) && result) {
                 const key = cacheKey || this._generateCacheKey(sql, params, schema);
-                await this.cache.set(key, result, {
+                const cacheProvider = this.cache || this.legacyCache;
+                await cacheProvider.set(key, result, {
                     ttl: cacheTtl,
                     tags: schema ? [schema] : undefined,
                     schema,
@@ -210,19 +214,20 @@ class MultiClusterPostgres extends events_1.EventEmitter {
      * Invalida cache por critério
      */
     async invalidateCache(criteria) {
-        if (!this.cache)
+        const cacheProvider = this.cache || this.legacyCache;
+        if (!cacheProvider)
             return 0;
         if (criteria.schema) {
-            return this.cache.invalidateBySchema(criteria.schema);
+            return cacheProvider.invalidateBySchema(criteria.schema);
         }
         if (criteria.tags) {
-            return this.cache.invalidateByTags(criteria.tags);
+            return cacheProvider.invalidateByTags(criteria.tags);
         }
         if (criteria.cluster) {
-            return this.cache.invalidateByCluster(criteria.cluster);
+            return cacheProvider.invalidateByCluster(criteria.cluster);
         }
         if (criteria.pattern) {
-            return this.cache.invalidateByPattern(criteria.pattern);
+            return cacheProvider.invalidateByPattern(criteria.pattern);
         }
         return 0;
     }
@@ -232,7 +237,8 @@ class MultiClusterPostgres extends events_1.EventEmitter {
     getMetrics() {
         this._ensureInitialized();
         const clusterMetrics = this.clusterManager.getMetrics();
-        const cacheStats = this.cache?.getStats();
+        const cacheProvider = this.cache || this.legacyCache;
+        const cacheStats = cacheProvider?.getStats();
         const transactionMetrics = this.transactionManager?.getMetrics();
         const totalQueries = Object.values(clusterMetrics).reduce((sum, cluster) => sum + cluster.queries.total, 0);
         const totalErrors = Object.values(clusterMetrics).reduce((sum, cluster) => sum + cluster.queries.errors, 0);
@@ -299,6 +305,10 @@ class MultiClusterPostgres extends events_1.EventEmitter {
             if (this.cache) {
                 await this.cache.close();
             }
+            // Para cache legado
+            if (this.legacyCache) {
+                await this.legacyCache.close();
+            }
             // Para observação de arquivos de config
             this.clusterConfig.stopWatching();
             this.isInitialized = false;
@@ -311,15 +321,42 @@ class MultiClusterPostgres extends events_1.EventEmitter {
         }
     }
     // ==================== MÉTODOS PRIVADOS ====================
+    async _initializeCache() {
+        if (!this.config.cache) {
+            return;
+        }
+        try {
+            const cacheConfig = {
+                provider: 'memory', // Default to memory
+                ...this.config.cache,
+            };
+            const factory = cache_1.CacheFactory.getInstance();
+            this.cache = await factory.createProviderWithFallback(cacheConfig);
+            // Setup cache event forwarding
+            this.cache.on('hit', (key) => this.emit('cacheHit', { key }));
+            this.cache.on('miss', (key) => this.emit('cacheMiss', { key }));
+            this.cache.on('eviction', (data) => this.emit('cacheEviction', data));
+            this.cache.on('error', (error) => this.emit('error', error));
+            console.log(`Cache initialized with provider: ${cacheConfig.provider}`);
+        }
+        catch (error) {
+            // Fallback to legacy cache if new cache fails
+            console.warn('Failed to initialize new cache system, falling back to legacy cache:', error);
+            this.legacyCache = new DistributedCache_1.DistributedCache(this.config.cache);
+            await this.legacyCache.initialize();
+            this.emit('error', new Error('Using legacy cache due to initialization failure'));
+        }
+    }
     _setupEventHandlers() {
         this.clusterManager.on('error', (error) => this.emit('error', error));
         this.clusterManager.on('clusterDown', (data) => this.emit('clusterDown', data));
         this.clusterManager.on('clusterUp', (data) => this.emit('clusterUp', data));
         this.clusterManager.on('clusterRecovered', (data) => this.emit('clusterRecovered', data));
         this.clusterConfig.on('configChanged', () => this._handleConfigChange());
-        if (this.cache) {
-            this.cache.on('error', (error) => this.emit('error', error));
-            this.cache.on('eviction', (data) => this.emit('cacheEviction', data));
+        // Legacy cache events (for backwards compatibility)
+        if (this.legacyCache) {
+            this.legacyCache.on('error', (error) => this.emit('error', error));
+            this.legacyCache.on('eviction', (data) => this.emit('cacheEviction', data));
         }
     }
     async _handleConfigChange() {

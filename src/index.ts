@@ -1,1 +1,112 @@
-// Exportações principais\nexport { MultiClusterPostgres } from './cluster/MultiClusterPostgres';\nexport { ClusterManager } from './cluster/ClusterManager';\nexport { ClusterConfig } from './cluster/ClusterConfig';\nexport { ConnectionPool } from './cluster/ConnectionPool';\n\n// Re-exporta todos os tipos\nexport * from './types';\n\n// Exportações de utilitários (se houver)\n// export * from './utils';\n\n// Default export\nexport { MultiClusterPostgres as default } from './cluster/MultiClusterPostgres';\n\n// Versão do pacote\nexport const VERSION = '1.0.0';\n\n/**\n * Multi-Cluster PostgreSQL para Node.js com TypeScript\n * \n * Características:\n * - Multi-schema e multi-cluster support\n * - Read/Write splitting inteligente\n * - Load balancing com múltiplas estratégias\n * - Cache distribuído com invalidação\n * - Transações distribuídas\n * - Health checking e failover automático\n * - Métricas detalhadas\n * - Type-safe queries com TypeScript\n * \n * @example\n * ```typescript\n * import { MultiClusterPostgres } from 'multi-cluster-postgres';\n * \n * const postgres = new MultiClusterPostgres({\n *   enableCache: true,\n *   enableMetrics: true,\n *   enableTransactions: true\n * });\n * \n * await postgres.initialize({\n *   users_cluster: {\n *     schemas: ['users', 'auth'],\n *     primary: {\n *       host: 'localhost',\n *       port: 5432,\n *       database: 'app_users',\n *       user: 'postgres',\n *       password: 'password'\n *     },\n *     replicas: [{\n *       host: 'replica.localhost',\n *       port: 5432,\n *       database: 'app_users',\n *       user: 'postgres',\n *       password: 'password'\n *     }]\n *   }\n * });\n * \n * // Type-safe query\n * interface User {\n *   id: number;\n *   email: string;\n *   name: string;\n * }\n * \n * const users = await postgres.query<User>(\n *   'SELECT * FROM users WHERE active = $1',\n *   [true],\n *   { schema: 'users', cache: true }\n * );\n * \n * // Distributed transaction\n * await postgres.withTransaction(['users', 'orders'], async (tx) => {\n *   await tx.query('UPDATE users SET last_order = NOW() WHERE id = $1', [userId]);\n *   await tx.query('INSERT INTO orders (user_id, total) VALUES ($1, $2)', [userId, total]);\n * });\n * ```\n */"
+// Exportações principais
+export { MultiClusterPostgres } from './cluster/MultiClusterPostgres';
+export { ClusterManager } from './cluster/ClusterManager';
+export { ClusterConfig } from './cluster/ClusterConfig';
+export { ConnectionPool } from './cluster/ConnectionPool';
+
+// Exportações de cache
+export { 
+  CacheProvider, 
+  CacheSetOptions, 
+  CacheProviderConfig, 
+  RedisConfig,
+  MemoryCache,
+  RedisCache,
+  CacheFactory 
+} from './cache';
+
+// Re-exporta todos os tipos
+export * from './types';
+
+// Exportações de utilitários (se houver)
+// export * from './utils';
+
+// Default export
+export { MultiClusterPostgres as default } from './cluster/MultiClusterPostgres';
+
+// Versão do pacote
+export const VERSION = '1.0.0';
+
+/**
+ * Multi-Cluster PostgreSQL para Node.js com TypeScript
+ * 
+ * Características:
+ * - Multi-schema e multi-cluster support
+ * - Read/Write splitting inteligente
+ * - Load balancing com múltiplas estratégias
+ * - Cache distribuído com invalidação (Redis e Memory)
+ * - Transações distribuídas
+ * - Health checking e failover automático
+ * - Métricas detalhadas
+ * - Type-safe queries com TypeScript
+ * 
+ * @example
+ * ```typescript
+ * import { MultiClusterPostgres } from 'pg-multiverse';
+ * 
+ * // Configuração com Redis cache
+ * const postgres = new MultiClusterPostgres({
+ *   enableCache: true,
+ *   enableMetrics: true,
+ *   enableTransactions: true,
+ *   cache: {
+ *     provider: 'redis',
+ *     redis: {
+ *       host: 'localhost',
+ *       port: 6379,
+ *       keyPrefix: 'pg-multiverse:',
+ *     },
+ *     fallback: {
+ *       enabled: true,
+ *       provider: 'memory'
+ *     }
+ *   }
+ * });
+ * 
+ * await postgres.initialize({
+ *   users_cluster: {
+ *     schemas: ['users', 'auth'],
+ *     primary: {
+ *       host: 'localhost',
+ *       port: 5432,
+ *       database: 'app_users',
+ *       user: 'postgres',
+ *       password: 'password'
+ *     },
+ *     replicas: [{
+ *       host: 'replica.localhost',
+ *       port: 5432,
+ *       database: 'app_users',
+ *       user: 'postgres',
+ *       password: 'password'
+ *     }]
+ *   }
+ * });
+ * 
+ * // Type-safe query com cache Redis
+ * interface User {
+ *   id: number;
+ *   email: string;
+ *   name: string;
+ * }
+ * 
+ * const users = await postgres.query<User>(
+ *   'SELECT * FROM users WHERE active = $1',
+ *   [true],
+ *   { 
+ *     schema: 'users', 
+ *     cache: true,
+ *     cacheTtl: 300000 // 5 minutes
+ *   }
+ * );
+ * 
+ * // Distributed transaction
+ * await postgres.withTransaction(['users', 'orders'], async (tx) => {
+ *   await tx.query('UPDATE users SET last_order = NOW() WHERE id = $1', [userId]);
+ *   await tx.query('INSERT INTO orders (user_id, total) VALUES ($1, $2)', [userId, total]);
+ * });
+ * 
+ * // Cache invalidation
+ * await postgres.invalidateCache({ schema: 'users' });
+ * ```
+ */

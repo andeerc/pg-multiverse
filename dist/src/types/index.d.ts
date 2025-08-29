@@ -58,6 +58,42 @@ export interface CacheConfig {
     enableCompression?: boolean;
     compressionThreshold?: number;
     strategy?: 'lru' | 'lfu' | 'fifo';
+    provider?: 'memory' | 'redis';
+    redis?: RedisConfig;
+    fallback?: {
+        enabled: boolean;
+        provider: 'memory';
+        syncOnReconnect?: boolean;
+    };
+}
+export interface RedisConfig {
+    host: string;
+    port: number;
+    password?: string;
+    db?: number;
+    cluster?: RedisClusterNode[];
+    sentinels?: RedisSentinelNode[];
+    keyPrefix?: string;
+    maxRetriesPerRequest?: number;
+    retryDelayOnFailover?: number;
+    enableReadyCheck?: boolean;
+    connectTimeout?: number;
+    lazyConnect?: boolean;
+    keepAlive?: number;
+    compression?: 'none' | 'gzip' | 'lz4';
+    serialization?: 'json' | 'msgpack';
+    pool?: {
+        min?: number;
+        max?: number;
+    };
+}
+export interface RedisClusterNode {
+    host: string;
+    port: number;
+}
+export interface RedisSentinelNode {
+    host: string;
+    port: number;
 }
 export type ConsistencyLevel = 'eventual' | 'strong';
 export type ReadPreference = 'replica' | 'primary' | 'any';

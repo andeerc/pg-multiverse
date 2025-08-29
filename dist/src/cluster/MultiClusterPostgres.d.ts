@@ -10,6 +10,7 @@ export declare class MultiClusterPostgres extends EventEmitter {
     private clusterManager;
     private clusterConfig;
     private cache;
+    private legacyCache;
     private transactionManager;
     private isInitialized;
     private schemas;
@@ -70,6 +71,7 @@ export declare class MultiClusterPostgres extends EventEmitter {
      * Fecha todas as conexões e limpa recursos
      */
     close(): Promise<void>;
+    private _initializeCache;
     private _setupEventHandlers;
     private _handleConfigChange;
     private _mapSchemasFromConfig;
