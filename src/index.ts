@@ -1,5 +1,5 @@
 // Exportações principais
-export { MultiClusterPostgres } from './cluster/MultiClusterPostgres';
+export { PgMultiverse } from './cluster/MultiClusterPostgres';
 export { ClusterManager } from './cluster/ClusterManager';
 export { ClusterConfig as ClusterConfigManager } from './cluster/ClusterConfig';
 export { ConnectionPool } from './cluster/ConnectionPool';
@@ -22,7 +22,7 @@ export * from './types';
 // export * from './utils';
 
 // Default export
-export { MultiClusterPostgres as default } from './cluster/MultiClusterPostgres';
+export { PgMultiverse as default } from './cluster/MultiClusterPostgres';
 
 // Versão do pacote
 export const VERSION = '1.0.0';
@@ -42,10 +42,10 @@ export const VERSION = '1.0.0';
  *
  * @example
  * ```typescript
- * import { MultiClusterPostgres } from 'pg-multiverse';
+ * import { PgMultiverse } from 'pg-multiverse';
  *
  * // Configuração com Redis cache
- * const postgres = new MultiClusterPostgres({
+ * const postgres = new PgMultiverse({
  *   enableCache: true,
  *   enableMetrics: true,
  *   enableTransactions: true,

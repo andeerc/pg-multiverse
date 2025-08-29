@@ -1,10 +1,10 @@
-import { MultiClusterPostgres, CacheFactory } from '../src';
+import { PgMultiverse, CacheFactory } from '../src';
 
 async function redisExample() {
   console.log('🌟 Redis Cache Example');
   
-  // Example 1: Using Redis cache with MultiClusterPostgres
-  const postgres = new MultiClusterPostgres({
+  // Example 1: Using Redis cache with PgMultiverse
+  const postgres = new PgMultiverse({
     enableCache: true,
     enableMetrics: true,
     cache: {
@@ -46,7 +46,7 @@ async function redisExample() {
       },
     });
 
-    console.log('✅ PostgreSQL with Redis cache initialized');
+    console.log('✅ PgMultiverse with Redis cache initialized');
 
     // Example query with caching
     const result = await postgres.query(

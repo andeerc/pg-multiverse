@@ -1,4 +1,4 @@
-import { MultiClusterPostgres } from '../src/cluster/MultiClusterPostgres';
+import { PgMultiverse, ClustersConfig } from '../src';
 
 // Definicoes de tipos para os exemplos
 interface User {
@@ -30,7 +30,7 @@ interface Order {
  */
 async function basicUsageExample(): Promise<void> {
   // Configuracao basica com 2 clusters
-  const clusterConfig = {
+  const clusterConfig: ClustersConfig = {
     users_cluster: {
       schemas: ['users', 'auth', 'profiles'],
       priority: 1,
@@ -73,8 +73,8 @@ async function basicUsageExample(): Promise<void> {
     }
   };
 
-  // Inicializa o Multi-Cluster PostgreSQL
-  const postgres = new MultiClusterPostgres({
+  // Inicializa o PgMultiverse
+  const postgres = new PgMultiverse({
     enableCache: true,
     enableMetrics: true,
     enableTransactions: true,
@@ -262,7 +262,7 @@ async function basicUsageExample(): Promise<void> {
 async function advancedConfigExample(): Promise<void> {
   console.log('\n🔧 Exemplo de configuracao avancada...');
 
-  const postgres = new MultiClusterPostgres({
+  const postgres = new PgMultiverse({
     configPath: './cluster-config.json', // Carrega config de arquivo
     enableCache: true,
     enableMetrics: true,

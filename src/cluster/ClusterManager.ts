@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { PoolClient } from 'pg';
 import {
   ClusterConfig,
+  ClustersConfig,
   ClusterManagerConfig,
   QueryOptions,
   QueryParam,
@@ -121,7 +122,7 @@ export class ClusterManager extends EventEmitter {
   /**
    * Inicializa o cluster manager com configuração de clusters
    */
-  async initialize(clusterConfigs: Record<string, any>): Promise<void> {
+  async initialize(clusterConfigs: ClustersConfig): Promise<void> {
     if (this.isInitialized) {
       throw new Error('ClusterManager already initialized');
     }

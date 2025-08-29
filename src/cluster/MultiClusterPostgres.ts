@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import {
   MultiClusterConfig,
+  ClustersConfig,
   QueryParam,
   QueryResult,
   QueryOptions,
@@ -25,7 +26,7 @@ import { CacheProvider, CacheFactory } from '../cache';
  * Classe principal para gerenciamento de múltiplos clusters PostgreSQL
  * com suporte a multi-schema, caching distribuído e transações
  */
-export class MultiClusterPostgres extends EventEmitter {
+export class PgMultiverse extends EventEmitter {
   private config: Required<MultiClusterConfig>;
   private clusterManager: ClusterManager;
   private clusterConfig: ClusterConfig;
@@ -61,7 +62,7 @@ export class MultiClusterPostgres extends EventEmitter {
   /**
    * Inicializa o sistema com configuração
    */
-  async initialize(clusterConfigs?: Record<string, any>): Promise<void> {
+  async initialize(clusterConfigs?: ClustersConfig): Promise<void> {
     if (this.isInitialized) {
       throw new Error('MultiClusterPostgres already initialized');
     }

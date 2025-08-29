@@ -128,6 +128,11 @@ export interface ClusterConfig {
   connectionPool?: ConnectionPoolConfig;
 }
 
+/**
+ * Tipo para a configuração de múltiplos clusters passada para o método initialize
+ */
+export type ClustersConfig = Record<string, Omit<ClusterConfig, 'id'>>;
+
 export interface ShardingConfig {
   strategy: 'hash' | 'range' | 'directory';
   key: string;
