@@ -6,7 +6,7 @@
 [![TypeScript](https://badges.frapsoft.com/typescript/code/typescript.svg?v=101)](https://github.com/ellerbrock/typescript-badges/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://img.shields.io/npm/dm/pg-multiverse.svg)](https://www.npmjs.com/package/pg-multiverse)
-[![GitHub Stars](https://img.shields.io/github/stars/pg-multiverse/pg-multiverse.svg)](https://github.com/pg-multiverse/pg-multiverse)
+[![GitHub Stars](https://img.shields.io/github/stars/andeerc/pg-multiverse.svg)](https://github.com/andeerc/pg-multiverse)
 
 **PG Multiverse** is a powerful, enterprise-grade PostgreSQL multi-cluster manager that brings advanced database scaling capabilities to Node.js applications. With full TypeScript support, intelligent load balancing, distributed caching, and seamless multi-schema operations.
 
@@ -478,7 +478,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md).
 
 ```bash
 # Clone the repository
-git clone https://github.com/pg-multiverse/pg-multiverse.git
+git clone https://github.com/andeerc/pg-multiverse.git
 cd pg-multiverse
 
 # Install dependencies
@@ -510,10 +510,10 @@ MIT © [PG Multiverse Team](LICENSE)
 
 <div align="center">
 
-**[🌟 Star us on GitHub](https://github.com/pg-multiverse/pg-multiverse)** •
+**[🌟 Star us on GitHub](https://github.com/andeerc/pg-multiverse)** •
 **[📖 Documentation](https://pg-multiverse.dev/docs)** •
 **[💬 Discord Community](https://discord.gg/pg-multiverse)** •
-**[🐛 Report Bug](https://github.com/pg-multiverse/pg-multiverse/issues)**
+**[🐛 Report Bug](https://github.com/andeerc/pg-multiverse/issues)**
 
 Made with ❤️ by the PG Multiverse Team
 
