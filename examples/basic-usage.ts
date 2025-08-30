@@ -52,7 +52,6 @@ async function basicUsageExample(): Promise<void> {
           user: 'postgres',
           password: 'password',
           maxConnections: 15,
-          weight: 2
         }
       ]
     },

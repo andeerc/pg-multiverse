@@ -242,7 +242,6 @@ export class DistributedTransaction extends EventEmitter {
     }
 
     this.activeTransactions.clear();
-    console.log('DistributedTransaction closed');
   }
 
   private async twoPhaseCommit(transaction: DistributedTransactionState): Promise<void> {

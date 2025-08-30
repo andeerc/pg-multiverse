@@ -1,15 +1,32 @@
 {
   "name": "pg-multiverse",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "🌌 Multi-cluster PostgreSQL manager for Node.js with TypeScript support. Features read/write splitting, intelligent load balancing, distributed caching, health monitoring, and seamless multi-schema operations.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.js"
-    }
+    },
+    "./cluster": {
+      "types": "./dist/cluster/index.d.ts",
+      "import": "./dist/cluster/index.js",
+      "require": "./dist/cluster/index.js"
+    },
+    "./cache": {
+      "types": "./dist/cache/index.d.ts",
+      "import": "./dist/cache/index.js",
+      "require": "./dist/cache/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js",
+      "require": "./dist/types/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsc",
@@ -90,9 +107,11 @@
     }
   ],
   "dependencies": {
-    "ioredis": "^5.3.0",
     "pg": "^8.11.0",
     "uuid": "^9.0.1"
+  },
+  "optionalDependencies": {
+    "ioredis": "^5.3.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
@@ -133,14 +152,10 @@
     "registry": "https://registry.npmjs.org/"
   },
   "files": [
-    "dist/**/*",
-    "src/**/*",
-    "examples/**/*",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
     "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
-    "CONTRIBUTING.md",
-    "cluster-config-example.json"
+    "LICENSE"
   ],
   "jest": {
     "preset": "ts-jest",

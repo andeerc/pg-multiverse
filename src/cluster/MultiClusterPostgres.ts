@@ -101,9 +101,7 @@ export class PgMultiverse extends EventEmitter {
         schemas: Array.from(this.schemas.keys()),
       });
 
-      console.log(
-        `MultiClusterPostgres initialized with ${this.clusterManager.getClusters().size} clusters and ${this.schemas.size} schemas`
-      );
+      // MultiClusterPostgres initialized
     } catch (error) {
       this.emit('error', error as Error);
       throw error;
@@ -430,7 +428,7 @@ export class PgMultiverse extends EventEmitter {
       this.isInitialized = false;
       this.emit('closed');
 
-      console.log('MultiClusterPostgres closed');
+      // MultiClusterPostgres closed
     } catch (error) {
       this.emit('error', error as Error);
       throw error;
@@ -459,10 +457,10 @@ export class PgMultiverse extends EventEmitter {
       this.cache.on('eviction', (data: any) => this.emit('cacheEviction', data));
       this.cache.on('error', (error: Error) => this.emit('error', error));
 
-      console.log(`Cache initialized with provider: ${cacheConfig.provider}`);
+      // Cache initialized
     } catch (error) {
       // Fallback to legacy cache if new cache fails
-      console.warn('Failed to initialize new cache system, falling back to legacy cache:', error);
+      // Failed to initialize cache, using fallback
       this.legacyCache = new DistributedCache(this.config.cache);
       await this.legacyCache.initialize();
       this.emit('error', new Error('Using legacy cache due to initialization failure'));

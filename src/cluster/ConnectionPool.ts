@@ -72,6 +72,12 @@ export class ConnectionPool extends EventEmitter {
     };
 
     this._createPool();
+    
+    // Inicialização assíncrona não-bloqueante
+    this._initialize().catch(error => {
+      this.emit('error', error, this.poolId);
+      // Não re-lançar o erro para não quebrar a aplicação
+    });
   }
 
   async getConnection(): Promise<PoolClient> {
@@ -109,7 +115,7 @@ export class ConnectionPool extends EventEmitter {
 
   async testConnection(): Promise<boolean> {
     try {
-      const client = await this.getConnection();
+      const client = await this.pool.connect();
       await client.query('SELECT 1');
       client.release();
       return true;
@@ -181,7 +187,7 @@ export class ConnectionPool extends EventEmitter {
 
     for (let i = 0; i < minConnections; i++) {
       warmupPromises.push(
-        this.getConnection()
+        this.pool.connect()
           .then(client => {
             setTimeout(() => client.release(), 100);
           })
@@ -193,9 +199,8 @@ export class ConnectionPool extends EventEmitter {
 
     try {
       await Promise.all(warmupPromises);
-      console.log(`Pool ${this.poolId} warmed up with ${minConnections} connections`);
     } catch (error) {
-      console.warn(`Failed to warm up pool ${this.poolId}:`, error);
+      // Silently handle warmup failures
     }
   }
 
@@ -210,7 +215,6 @@ export class ConnectionPool extends EventEmitter {
     try {
       await this.pool.end();
       this.emit('poolClosed', this.poolId);
-      console.log(`Pool ${this.poolId} closed`);
     } catch (error) {
       this.emit('error', error as Error, this.poolId);
       throw error;
@@ -236,7 +240,6 @@ export class ConnectionPool extends EventEmitter {
 
     this.pool = new Pool(poolConfig);
     this._setupPoolEvents();
-    this._initialize();
   }
 
   private _setupPoolEvents(): void {
@@ -257,8 +260,12 @@ export class ConnectionPool extends EventEmitter {
 
   private async _initialize(): Promise<void> {
     try {
-      await this.testConnection();
-
+      const connectionTest = await this.testConnection();
+      
+      if (!connectionTest) {
+        throw new Error(`Failed to establish connection for pool ${this.poolId}`);
+      }
+      
       if (this.config.warmupConnections) {
         await this.warmup();
       }
@@ -267,6 +274,7 @@ export class ConnectionPool extends EventEmitter {
       this.emit('poolReady', this.poolId);
     } catch (error) {
       this.emit('error', error as Error, this.poolId);
+      // Não re-lançar o erro - deixa o pool em estado não-ready
     }
   }
 

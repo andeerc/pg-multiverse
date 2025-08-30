@@ -139,7 +139,7 @@ export class ClusterManager extends EventEmitter {
       this.isInitialized = true;
       this.emit('initialized', { clusters: Array.from(this.clusters.keys()) });
 
-      console.log(`ClusterManager initialized with ${this.clusters.size} clusters`);
+      // ClusterManager initialized
     } catch (error) {
       this.emit('error', error as Error);
       throw error;
@@ -437,7 +437,7 @@ export class ClusterManager extends EventEmitter {
       oldPrimary: oldPrimary?.getId(),
     });
 
-    console.log(`Failover completed for cluster ${clusterId}`);
+    // Failover completed
   }
 
   /**
@@ -522,9 +522,12 @@ export class ClusterManager extends EventEmitter {
       clusterInfo.pools.primary = primaryPool;
 
       this.connectionPools.set(`${clusterId}_primary`, primaryPool);
+      
+      // Aguarda primary estar ready
+      await this._waitForPoolReady(primaryPool);
     }
 
-    // Configura réplicas
+    // Configura réplicas (assíncrono e tolerante a falhas)
     if (config.replicas && config.replicas.length > 0) {
       for (let i = 0; i < config.replicas.length; i++) {
         const replicaConfig = config.replicas[i];
@@ -539,6 +542,26 @@ export class ClusterManager extends EventEmitter {
         clusterInfo.pools.replicas.push(replicaPool);
 
         this.connectionPools.set(`${clusterId}_replica_${i}`, replicaPool);
+
+        // Adiciona listener de erro antes de aguardar
+        replicaPool.on('error', (error) => {
+          // Não propagar erro
+        });
+
+        // Aguarda réplica de forma não-bloqueante
+        this._waitForPoolReady(replicaPool, 15000)
+          .then(() => {
+            // Replica ready
+          })
+          .catch((error) => {
+            // Remove réplica com falha
+            const replicaIndex = clusterInfo.pools.replicas.indexOf(replicaPool);
+            if (replicaIndex > -1) {
+              clusterInfo.pools.replicas.splice(replicaIndex, 1);
+              clusterInfo.replicas.splice(replicaIndex, 1);
+              this.connectionPools.delete(`${clusterId}_replica_${i}`);
+            }
+          });
       }
     }
 
@@ -557,8 +580,7 @@ export class ClusterManager extends EventEmitter {
       connections: 0,
     });
 
-    // Testa conectividade inicial
-    await this._testClusterConnectivity(clusterId);
+    // Conectividade inicial já testada durante inicialização dos pools
 
     clusterInfo.status = 'active';
     this.emit('clusterRegistered', { clusterId, config });
@@ -629,22 +651,91 @@ export class ClusterManager extends EventEmitter {
     }
   }
 
+  private async _waitForPoolReady(pool: ConnectionPool, timeoutMs: number = 30000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Pool ${pool.getId()} not ready within ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      const checkReady = () => {
+        const info = pool.getInfo();
+        if (info.isReady) {
+          clearTimeout(timeout);
+          resolve();
+        } else if (info.isClosed) {
+          clearTimeout(timeout);
+          reject(new Error(`Pool ${pool.getId()} was closed while waiting for ready`));
+        } else {
+          setTimeout(checkReady, 100);
+        }
+      };
+
+      // Se já está ready
+      if (pool.getInfo().isReady) {
+        clearTimeout(timeout);
+        resolve();
+        return;
+      }
+
+      // Aguarda evento poolReady
+      pool.once('poolReady', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+
+      pool.once('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+
+      checkReady();
+    });
+  }
+
   private async _testClusterConnectivity(clusterId: string): Promise<void> {
     const cluster = this.clusters.get(clusterId);
     if (!cluster) return;
 
+    let primaryConnected = false;
+    let replicasConnected = 0;
+
     // Testa primary
     if (cluster.pools.primary) {
-      const conn = await cluster.pools.primary.getConnection();
-      await conn.query('SELECT 1');
-      conn.release();
+      try {
+        const conn = await cluster.pools.primary.getConnection();
+        await conn.query('SELECT 1');
+        conn.release();
+        primaryConnected = true;
+        // Primary connection healthy
+      } catch (error) {
+        // Primary connection failed
+        throw new Error(`Primary database connection failed for cluster ${clusterId}`);
+      }
     }
 
-    // Testa replicas
-    for (const replica of cluster.pools.replicas) {
-      const conn = await replica.getConnection();
-      await conn.query('SELECT 1');
-      conn.release();
+    // Testa replicas (tolerante a falhas)
+    for (let i = 0; i < cluster.pools.replicas.length; i++) {
+      const replica = cluster.pools.replicas[i];
+      try {
+        const conn = await replica.getConnection();
+        await conn.query('SELECT 1');
+        conn.release();
+        replicasConnected++;
+        // Replica connection healthy
+      } catch (error) {
+        // Replica connection failed
+        // Remove réplica com falha do pool
+        cluster.pools.replicas.splice(i, 1);
+        cluster.replicas.splice(i, 1);
+        this.connectionPools.delete(`${clusterId}_replica_${i}`);
+        i--; // Ajusta índice após remoção
+      }
+    }
+
+    // Connectivity test completed
+    
+    if (!primaryConnected) {
+      throw new Error(`Cluster ${clusterId} primary connection is required but failed`);
     }
   }
 
