@@ -4,6 +4,9 @@ export { ClusterManager } from './cluster/ClusterManager';
 export { ClusterConfig as ClusterConfigManager } from './cluster/ClusterConfig';
 export { ConnectionPool } from './cluster/ConnectionPool';
 
+// Exportações de migrations
+export { MigrationManager } from './migrations';
+
 // Exportações de cache
 export {
   CacheProvider,
@@ -25,7 +28,7 @@ export * from './types';
 export { PgMultiverse as default } from './cluster/MultiClusterPostgres';
 
 // Versão do pacote
-export const VERSION = '1.0.0';
+export const VERSION = '1.3.0';
 
 /**
  * Multi-Cluster PostgreSQL para Node.js com TypeScript
@@ -35,6 +38,7 @@ export const VERSION = '1.0.0';
  * - Read/Write splitting inteligente
  * - Load balancing com múltiplas estratégias
  * - Cache distribuído com invalidação (Redis e Memory)
+ * - Database migrations (TypeScript/JavaScript)
  * - Transações distribuídas
  * - Health checking e failover automático
  * - Métricas detalhadas

@@ -15,12 +15,18 @@ import {
   MultiClusterEvents,
   TypedEventEmitter,
   ValidationResult,
+  MigrationConfig,
+  MigrationExecutionOptions,
+  MigrationRollbackOptions,
+  MigrationStatus,
+  Migration,
 } from '../types';
 import { ClusterManager } from './ClusterManager';
 import { ClusterConfig } from './ClusterConfig';
 import { DistributedCache } from './DistributedCache';
 import { DistributedTransaction } from './DistributedTransaction';
 import { CacheProvider, CacheFactory } from '../cache';
+import { MigrationManager } from '../migrations/MigrationManager';
 
 /**
  * Classe principal para gerenciamento de múltiplos clusters PostgreSQL
@@ -33,6 +39,7 @@ export class PgMultiverse extends EventEmitter {
   private cache: CacheProvider | null;
   private legacyCache: DistributedCache | null; // Backwards compatibility
   private transactionManager: DistributedTransaction | null;
+  private migrationManager: MigrationManager | null;
   private isInitialized: boolean = false;
   private schemas: Map<string, SchemaMapping>;
 
@@ -43,8 +50,10 @@ export class PgMultiverse extends EventEmitter {
       enableCache: true,
       enableMetrics: true,
       enableTransactions: true,
+      enableMigrations: false,
       cluster: {},
       cache: {},
+      migrations: {},
       configPath: config.configPath || '',
       ...config,
     };
@@ -54,6 +63,7 @@ export class PgMultiverse extends EventEmitter {
     this.cache = null;
     this.legacyCache = null;
     this.transactionManager = null;
+    this.migrationManager = null;
     this.schemas = new Map<string, SchemaMapping>();
 
     this._setupEventHandlers();
@@ -93,6 +103,12 @@ export class PgMultiverse extends EventEmitter {
       if (this.config.enableTransactions) {
         this.transactionManager = new DistributedTransaction(this.clusterManager);
         await this.transactionManager.initialize();
+      }
+
+      // Inicializa migration manager se habilitado
+      if (this.config.enableMigrations) {
+        this.migrationManager = new MigrationManager(this, this.config.migrations);
+        await this.migrationManager.initialize();
       }
 
       this.isInitialized = true;
@@ -395,6 +411,66 @@ export class PgMultiverse extends EventEmitter {
     return this.clusterConfig.validate();
   }
 
+  // ==================== MÉTODOS DE MIGRATIONS ====================
+
+  /**
+   * Obtém gerenciador de migrations
+   */
+  getMigrationManager(): MigrationManager {
+    this._ensureInitialized();
+    if (!this.migrationManager) {
+      throw new Error('Migrations not enabled. Set enableMigrations: true in config.');
+    }
+    return this.migrationManager;
+  }
+
+  /**
+   * Executa migrations pendentes
+   */
+  async migrate(options?: MigrationExecutionOptions): Promise<MigrationStatus> {
+    return this.getMigrationManager().migrate(options);
+  }
+
+  /**
+   * Executa rollback de migrations
+   */
+  async rollback(options?: MigrationRollbackOptions): Promise<MigrationStatus> {
+    return this.getMigrationManager().rollback(options);
+  }
+
+  /**
+   * Obtém status das migrations
+   */
+  async getMigrationStatus(): Promise<MigrationStatus> {
+    return this.getMigrationManager().getStatus();
+  }
+
+  /**
+   * Adiciona uma migration programaticamente
+   */
+  addMigration(migration: Migration): void {
+    this.getMigrationManager().addMigration(migration);
+  }
+
+  /**
+   * Cria nova migration file
+   */
+  async createMigration(name: string, options: {
+    targetSchemas: string[];
+    targetClusters?: string[];
+    description?: string;
+    tags?: string[];
+  }): Promise<string> {
+    return this.getMigrationManager().createMigration(name, options);
+  }
+
+  /**
+   * Lista todas as migrations carregadas
+   */
+  getMigrations(): Migration[] {
+    return this.getMigrationManager().getMigrations();
+  }
+
   /**
    * Fecha todas as conexões e limpa recursos
    */
@@ -407,6 +483,11 @@ export class PgMultiverse extends EventEmitter {
       // Para transaction manager
       if (this.transactionManager) {
         await this.transactionManager.close();
+      }
+
+      // Para migration manager
+      if (this.migrationManager) {
+        await this.migrationManager.close();
       }
 
       // Para cluster manager

@@ -2,7 +2,7 @@ import { PgMultiverse, CacheFactory } from '../src';
 
 async function redisExample() {
   console.log('🌟 Redis Cache Example');
-  
+
   // Example 1: Using Redis cache with PgMultiverse
   const postgres = new PgMultiverse({
     enableCache: true,
@@ -34,7 +34,6 @@ async function redisExample() {
     // Initialize with cluster configuration
     await postgres.initialize({
       main_cluster: {
-        id: 'main',
         schemas: ['public', 'users'],
         primary: {
           host: 'localhost',
@@ -87,7 +86,7 @@ async function standaloneRedisExample() {
   console.log('\n🔧 Standalone Redis Cache Example');
 
   const factory = CacheFactory.getInstance();
-  
+
   const cacheConfig = {
     provider: 'redis' as const,
     redis: {
@@ -136,7 +135,7 @@ async function memoryFallbackExample() {
   console.log('\n🧠 Memory Fallback Example');
 
   const factory = CacheFactory.getInstance();
-  
+
   // Configure with invalid Redis to test fallback
   const cacheConfig = {
     provider: 'redis' as const,
@@ -207,12 +206,12 @@ async function main() {
     // Run examples (comment out if Redis is not available)
     // await redisExample();
     // await standaloneRedisExample();
-    
+
     // This example works without Redis
     await memoryFallbackExample();
 
     console.log('\n✅ All examples completed successfully!');
-    
+
   } catch (error) {
     console.error('\n❌ Example failed:', error);
   }

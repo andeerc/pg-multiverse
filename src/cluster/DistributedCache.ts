@@ -45,12 +45,9 @@ export class DistributedCache extends EventEmitter {
   }
 
   async initialize(): Promise<void> {
-    // Start cleanup interval
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
-    }, 60000); // Every minute
-
-    console.log('DistributedCache initialized');
+    }, 60000);
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -214,8 +211,6 @@ export class DistributedCache extends EventEmitter {
 
     this.cache.clear();
     this.removeAllListeners();
-
-    console.log('DistributedCache closed');
   }
 
   private cleanup(): void {

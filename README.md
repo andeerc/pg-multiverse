@@ -29,6 +29,7 @@
 ### 🛠️ **Developer Experience**
 
 - **Full TypeScript Support** - Type-safe queries with generics and interfaces
+- **Database Migrations** - Multi-cluster schema management with TypeScript/JavaScript support
 - **Zero Configuration** - Works out of the box with sensible defaults
 - **Rich Metrics** - Detailed performance monitoring and health statistics
 - **Event-Driven** - Comprehensive event system for monitoring and debugging
@@ -38,7 +39,15 @@
 ### Installation
 
 ```bash
+# Core library
 npm install pg-multiverse
+
+# Optional: For TypeScript migration support
+npm install ts-node
+
+# Optional: CLI tools
+npm install -g pg-multiverse
+# or use: npx pgm <command>
 ```
 
 ### Basic Usage
@@ -96,6 +105,31 @@ const users = await postgres.query<User>(
 users.rows.forEach(user => {
   console.log(`${user.name} <${user.email}>`);
 });
+```
+
+### Database Migrations
+
+```typescript
+// Enable migrations
+const postgres = new PgMultiverse({
+  enableMigrations: true,
+  migrations: {
+    migrationsPath: './migrations',
+    autoCreateMigrationsTable: true,
+  },
+});
+
+await postgres.initialize(config);
+
+// Run pending migrations
+await postgres.migrate();
+
+// Check migration status
+const status = await postgres.getMigrationStatus();
+console.log(`Applied: ${status.appliedMigrations}, Pending: ${status.pendingMigrations}`);
+
+// Rollback last migration
+await postgres.rollback({ steps: 1 });
 ```
 
 ### Distributed Transactions
@@ -200,7 +234,7 @@ await postgres.invalidateCache({
 #### Core Methods
 
 ```typescript
-class MultiClusterPostgres {
+class PgMultiverse {
   // Initialize with cluster configuration
   async initialize(config: ClusterConfiguration): Promise<void>
 
@@ -209,6 +243,15 @@ class MultiClusterPostgres {
 
   // Distributed transactions
   async withTransaction<T>(schemas: string[], callback: TransactionCallback<T>): Promise<T>
+
+  // Database migrations
+  async migrate(options?: MigrationExecutionOptions): Promise<MigrationStatus>
+  async rollback(options?: MigrationRollbackOptions): Promise<MigrationStatus>
+  async getMigrationStatus(): Promise<MigrationStatus>
+  async createMigration(name: string, options: MigrationCreateOptions): Promise<string>
+  getMigrations(): Migration[]
+  addMigration(migration: Migration): void
+  getMigrationManager(): MigrationManager
 
   // Health and metrics
   async healthCheck(): Promise<HealthReport>
@@ -229,11 +272,24 @@ interface MultiClusterConfig {
   enableCache?: boolean;        // Enable distributed caching
   enableMetrics?: boolean;      // Collect performance metrics
   enableTransactions?: boolean; // Enable distributed transactions
+  enableMigrations?: boolean;   // Enable database migrations
 
   cache?: {
     maxSize?: number;          // Max cache entries (1000)
     ttl?: number;              // Default TTL in ms (300000)
     enableCompression?: boolean; // Compress large entries
+  };
+
+  migrations?: {
+    migrationsPath?: string;           // Path to migration files (./migrations)
+    migrationsTable?: string;          // Control table name
+    lockTable?: string;                // Locking table name
+    autoCreateMigrationsTable?: boolean; // Auto-create control tables
+    validateChecksums?: boolean;       // Validate migration integrity
+    allowOutOfOrder?: boolean;         // Require sequential execution
+    lockTimeout?: number;              // Lock timeout in ms (60000)
+    batchSize?: number;                // Batch size for parallel execution
+    logger?: MigrationLogger;          // Custom logger instance
   };
 
   cluster?: {
@@ -242,6 +298,387 @@ interface MultiClusterConfig {
     maxFailuresBeforeMarkDown?: number; // Failures before marking down (3)
   };
 }
+```
+
+## 🗄️ Database Migrations
+
+PG Multiverse includes a powerful migration system that supports multi-cluster and multi-schema databases with both TypeScript and JavaScript.
+
+### Migration Configuration
+
+```typescript
+const postgres = new PgMultiverse({
+  enableMigrations: true,
+  migrations: {
+    migrationsPath: './migrations',           // Path to migration files
+    migrationsTable: 'pg_multiverse_migrations', // Control table name
+    lockTable: 'pg_multiverse_migration_locks',  // Locking table name
+    autoCreateMigrationsTable: true,         // Auto-create control tables
+    validateChecksums: true,                 // Validate migration integrity
+    allowOutOfOrder: false,                  // Require sequential execution
+    lockTimeout: 60000,                      // Lock timeout in ms
+    batchSize: 100,                          // Batch size for parallel execution
+    logger: customLogger                     // Custom logger instance
+  }
+});
+```
+
+### Creating Migrations
+
+#### TypeScript Migrations
+
+```typescript
+// migrations/20241230120000_create_users.ts
+import { Migration, MigrationContext } from 'pg-multiverse';
+
+const migration: Migration = {
+  version: '20241230120000_create_users',
+  name: 'create_users',
+  description: 'Create users table with profiles',
+  targetSchemas: ['users', 'auth'],
+  targetClusters: ['users_cluster'], // Optional: specific clusters
+  dependencies: ['20241230110000_create_base'], // Optional: dependencies
+  tags: ['users', 'initial'],        // Optional: tags for organization
+  createdAt: new Date(),
+
+  async up(context: MigrationContext): Promise<void> {
+    context.logger.info(`Creating users table in ${context.schema}`);
+    
+    // Type-safe query execution
+    await context.query(`
+      CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Insert seed data
+    await context.query(`
+      INSERT INTO users (email, name) VALUES 
+      ($1, $2), ($3, $4)
+    `, ['admin@example.com', 'Admin', 'user@example.com', 'User']);
+
+    context.logger.info('Users table created successfully');
+  },
+
+  async down(context: MigrationContext): Promise<void> {
+    context.logger.info(`Dropping users table from ${context.schema}`);
+    await context.query(`DROP TABLE IF EXISTS users`);
+    context.logger.info('Users table dropped successfully');
+  }
+};
+
+export default migration;
+```
+
+#### JavaScript Migrations
+
+```javascript
+// migrations/20241230130000_add_profiles.js
+const migration = {
+  version: '20241230130000_add_profiles',
+  name: 'add_profiles',
+  description: 'Add user profiles functionality',
+  targetSchemas: ['users'],
+  createdAt: new Date(),
+
+  async up(context) {
+    await context.query(`
+      CREATE TABLE profiles (
+        user_id INTEGER PRIMARY KEY REFERENCES users(id),
+        bio TEXT,
+        avatar_url VARCHAR(500),
+        settings JSONB DEFAULT '{}'
+      )
+    `);
+  },
+
+  async down(context) {
+    await context.query(`DROP TABLE IF EXISTS profiles`);
+  }
+};
+
+module.exports = migration;
+```
+
+### Migration Operations
+
+#### Running Migrations
+
+```typescript
+// Run all pending migrations
+await postgres.migrate();
+
+// Run migrations with options
+await postgres.migrate({
+  targetVersion: '20241230120000_create_users', // Run up to specific version
+  targetSchemas: ['users', 'auth'],             // Specific schemas only
+  targetClusters: ['users_cluster'],            // Specific clusters only
+  dryRun: true,                                 // Show what would run without executing
+  parallel: true,                               // Run in parallel where possible
+  maxParallel: 4,                               // Max parallel executions
+  continueOnError: false,                       // Stop on first error
+});
+
+// Run with detailed progress monitoring
+postgres.getMigrationManager().on('migrationStarted', (data) => {
+  console.log(`⚡ Starting: ${data.name} on ${data.schema}@${data.cluster}`);
+});
+
+postgres.getMigrationManager().on('migrationCompleted', (data) => {
+  console.log(`✅ Completed: ${data.name} (${data.duration}ms)`);
+});
+```
+
+#### Rollback Operations
+
+```typescript
+// Rollback last migration
+await postgres.rollback({ steps: 1 });
+
+// Rollback to specific version
+await postgres.rollback({
+  targetVersion: '20241230110000_create_base',
+  targetSchemas: ['users'],
+  dryRun: true // Preview rollback without executing
+});
+
+// Rollback with error handling
+try {
+  await postgres.rollback({ steps: 2, force: true });
+} catch (error) {
+  console.error('Rollback failed:', error.message);
+}
+```
+
+#### Migration Status and Management
+
+```typescript
+// Get comprehensive status
+const status = await postgres.getMigrationStatus();
+console.log(`Total: ${status.totalMigrations}`);
+console.log(`Applied: ${status.appliedMigrations}`);
+console.log(`Pending: ${status.pendingMigrations}`);
+
+// Status by schema
+Object.entries(status.bySchema).forEach(([schema, stats]) => {
+  console.log(`${schema}: ${stats.applied} applied, ${stats.pending} pending`);
+  if (stats.lastApplied) {
+    console.log(`  Last applied: ${stats.lastApplied}`);
+  }
+});
+
+// Status by cluster
+Object.entries(status.byCluster).forEach(([cluster, stats]) => {
+  console.log(`${cluster}: ${stats.applied} applied, ${stats.pending} pending`);
+});
+
+// List all available migrations
+const migrations = postgres.getMigrations();
+migrations.forEach(migration => {
+  console.log(`${migration.version}: ${migration.name}`);
+  console.log(`  Schemas: ${migration.targetSchemas.join(', ')}`);
+  console.log(`  Description: ${migration.description}`);
+});
+```
+
+#### Creating Migration Files
+
+```typescript
+// Create new migration file
+const filePath = await postgres.createMigration('add_user_permissions', {
+  targetSchemas: ['users', 'auth'],
+  targetClusters: ['users_cluster'],
+  description: 'Add user permissions and roles system',
+  tags: ['permissions', 'security']
+});
+
+console.log(`Migration created: ${filePath}`);
+```
+
+### CLI Migration Management
+
+Install the CLI globally or use npx:
+
+```bash
+npm install -g pg-multiverse
+# or use npx pg-multiverse
+```
+
+#### CLI Commands
+
+```bash
+# Create a new migration
+pgm create add_user_roles --schemas users,auth --description "Add role-based permissions"
+
+# Run migrations
+pgm migrate                              # Run all pending
+pgm migrate --target 20241230120000      # Run up to specific version
+pgm migrate --schemas users,products     # Specific schemas only
+pgm migrate --parallel                   # Run in parallel
+pgm migrate --dry-run                    # Preview without executing
+
+# Check status
+pgm status                               # Overall status
+pgm status --schemas users              # Schema-specific status
+pgm status --verbose                     # Detailed information
+
+# Rollback migrations
+pgm rollback --steps 1                   # Rollback last migration
+pgm rollback --target 20241230110000     # Rollback to specific version
+pgm rollback --dry-run                   # Preview rollback
+
+# List migrations
+pgm list                                 # Show all migrations
+pgm list --verbose                       # Show detailed information
+
+# Global options
+pgm --config config.json                 # Use custom config file
+pgm --migrations ./db/migrations         # Custom migrations path
+pgm --verbose                            # Verbose output
+```
+
+### Advanced Migration Features
+
+#### Cross-Cluster Dependencies
+
+```typescript
+const migration: Migration = {
+  version: '20241230150000_create_orders',
+  name: 'create_orders',
+  targetSchemas: ['orders'],
+  dependencies: ['20241230120000_create_users'], // Users must exist first
+  
+  async up(context) {
+    // Reference data from other clusters is handled automatically
+    await context.query(`
+      CREATE TABLE orders (
+        id SERIAL PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL, -- Reference to users cluster
+        total DECIMAL(10,2) NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending'
+      )
+    `);
+  }
+};
+```
+
+#### Conditional Migrations
+
+```typescript
+const migration: Migration = {
+  version: '20241230160000_conditional_update',
+  name: 'conditional_update',
+  targetSchemas: ['users'],
+  
+  async up(context) {
+    // Check if column exists before adding
+    const result = await context.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'last_login'
+    `);
+    
+    if (result.rows.length === 0) {
+      await context.query(`
+        ALTER TABLE users ADD COLUMN last_login TIMESTAMP
+      `);
+      context.logger.info('Added last_login column');
+    } else {
+      context.logger.info('last_login column already exists, skipping');
+    }
+  }
+};
+```
+
+#### Data Migrations with Batching
+
+```typescript
+const migration: Migration = {
+  version: '20241230170000_migrate_user_data',
+  name: 'migrate_user_data',
+  targetSchemas: ['users'],
+  
+  async up(context) {
+    // Process large datasets in batches
+    let offset = 0;
+    const batchSize = 1000;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const users = await context.query(`
+        SELECT id, old_field 
+        FROM users 
+        WHERE new_field IS NULL 
+        LIMIT $1 OFFSET $2
+      `, [batchSize, offset]);
+      
+      if (users.rows.length === 0) {
+        hasMore = false;
+        break;
+      }
+      
+      // Process batch
+      for (const user of users.rows) {
+        await context.query(`
+          UPDATE users 
+          SET new_field = $1 
+          WHERE id = $2
+        `, [processOldField(user.old_field), user.id]);
+      }
+      
+      offset += batchSize;
+      context.logger.info(`Processed ${offset} users`);
+    }
+  }
+};
+```
+
+### Migration Best Practices
+
+#### 1. **Naming Convention**
+```
+YYYYMMDDHHMMSS_descriptive_name.ts
+20241230120000_create_users_table.ts
+20241230130000_add_user_permissions.ts
+20241230140000_migrate_legacy_data.ts
+```
+
+#### 2. **Schema Organization**
+- Group related tables in the same migration
+- Use descriptive names and comments
+- Always provide rollback functionality
+
+#### 3. **Production Safety**
+```typescript
+// Always test with dry-run first
+await postgres.migrate({ dryRun: true });
+
+// Use transactions for complex migrations
+const migration: Migration = {
+  async up(context) {
+    await context.query('BEGIN');
+    try {
+      await context.query('-- complex operations');
+      await context.query('COMMIT');
+    } catch (error) {
+      await context.query('ROLLBACK');
+      throw error;
+    }
+  }
+};
+```
+
+#### 4. **Error Handling**
+```typescript
+// Comprehensive error handling
+postgres.getMigrationManager().on('migrationFailed', (data) => {
+  console.error(`❌ Migration ${data.name} failed:`, data.error.message);
+  // Send alerts, log to monitoring system, etc.
+});
 ```
 
 ## 🏗️ Advanced Usage
@@ -427,24 +864,28 @@ Object.entries(health).forEach(([clusterId, status]) => {
 - **Catalog Cluster**: products, categories, inventory
 - **Order Cluster**: orders, payments, shipping
 - **Analytics Cluster**: events, metrics, reports
+- **Schema Evolution**: Coordinated migrations across all clusters
 
 ### 🏢 **Multi-tenant SaaS**
 
 - **Tenant Isolation**: Separate clusters per tier
 - **Shared Services**: Common clusters for billing, analytics
 - **Geographic Distribution**: Region-specific clusters
+- **Rolling Updates**: Zero-downtime schema migrations per tenant
 
 ### 🔧 **Microservices Architecture**
 
 - **Service Isolation**: One cluster per microservice
 - **Cross-service Transactions**: Distributed transactions
 - **Centralized Monitoring**: Unified metrics and health
+- **Independent Deployments**: Service-specific migration management
 
 ### 📊 **Data-intensive Applications**
 
 - **OLTP/OLAP Separation**: Transactional vs analytical workloads
 - **Read Scaling**: Multiple read replicas
 - **Cache Optimization**: Aggressive caching for hot data
+- **Data Pipeline Management**: Automated migrations for ETL processes
 
 ## 📦 Migration Guide
 

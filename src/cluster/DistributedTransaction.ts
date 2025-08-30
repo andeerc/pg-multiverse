@@ -42,7 +42,7 @@ export class DistributedTransaction extends EventEmitter {
   }
 
   async initialize(): Promise<void> {
-    console.log('DistributedTransaction initialized');
+    //
   }
 
   async begin(schemas: string[], options: TransactionOptions = {}): Promise<string> {

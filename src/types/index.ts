@@ -49,8 +49,10 @@ export interface MultiClusterConfig {
   enableCache?: boolean;
   enableMetrics?: boolean;
   enableTransactions?: boolean;
+  enableMigrations?: boolean;
   cluster?: ClusterManagerConfig;
   cache?: CacheConfig;
+  migrations?: MigrationConfig;
   configPath?: string;
 }
 
@@ -450,4 +452,160 @@ export interface TypedEventEmitter<
   removeAllListeners<K extends keyof T>(event?: K): this;
   listeners<K extends keyof T>(event: K): T[K][];
   listenerCount<K extends keyof T>(event: K): number;
+}
+
+// ==================== MIGRATIONS ====================
+
+export interface Migration {
+  version: string;
+  name: string;
+  description?: string;
+  targetSchemas: string[];
+  targetClusters?: string[];
+  up: MigrationFunction;
+  down: MigrationFunction;
+  dependencies?: string[];
+  tags?: string[];
+  createdAt: Date;
+}
+
+export interface MigrationContext {
+  query: (sql: string, params?: QueryParam[]) => Promise<QueryResult>;
+  schema: string;
+  cluster: string;
+  version: string;
+  logger: MigrationLogger;
+}
+
+export type MigrationFunction = (context: MigrationContext) => Promise<void>;
+
+export interface MigrationLogger {
+  info: (message: string, meta?: any) => void;
+  warn: (message: string, meta?: any) => void;
+  error: (message: string, meta?: any) => void;
+  debug: (message: string, meta?: any) => void;
+}
+
+export interface MigrationRecord {
+  version: string;
+  name: string;
+  schema: string;
+  cluster: string;
+  executedAt: Date;
+  executionTime: number;
+  checksum: string;
+  batch?: number;
+}
+
+export interface MigrationState {
+  version: string;
+  name: string;
+  schema: string;
+  cluster: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'rolled_back';
+  appliedAt?: Date;
+  rolledBackAt?: Date;
+  executionTime?: number;
+  error?: string;
+  checksum: string;
+  batch?: number;
+}
+
+export interface MigrationConfig {
+  migrationsPath?: string;
+  migrationsTable?: string;
+  lockTable?: string;
+  lockTimeout?: number;
+  batchSize?: number;
+  autoCreateMigrationsTable?: boolean;
+  validateChecksums?: boolean;
+  allowOutOfOrder?: boolean;
+  logger?: MigrationLogger;
+}
+
+export interface MigrationExecutionOptions {
+  targetVersion?: string;
+  targetSchemas?: string[];
+  targetClusters?: string[];
+  dryRun?: boolean;
+  force?: boolean;
+  parallel?: boolean;
+  maxParallel?: number;
+  continueOnError?: boolean;
+  createCheckpoint?: boolean;
+}
+
+export interface MigrationRollbackOptions {
+  targetVersion?: string;
+  steps?: number;
+  targetSchemas?: string[];
+  targetClusters?: string[];
+  dryRun?: boolean;
+  force?: boolean;
+}
+
+export interface MigrationStatus {
+  totalMigrations: number;
+  appliedMigrations: number;
+  pendingMigrations: number;
+  failedMigrations: number;
+  bySchema: Record<string, {
+    applied: number;
+    pending: number;
+    failed: number;
+    lastApplied?: string;
+  }>;
+  byCluster: Record<string, {
+    applied: number;
+    pending: number;
+    failed: number;
+    lastApplied?: string;
+  }>;
+}
+
+export interface MigrationManagerEvents {
+  migrationStarted: (data: {
+    version: string;
+    name: string;
+    schema: string;
+    cluster: string;
+  }) => void;
+  migrationCompleted: (data: {
+    version: string;
+    name: string;
+    schema: string;
+    cluster: string;
+    duration: number;
+  }) => void;
+  migrationFailed: (data: {
+    version: string;
+    name: string;
+    schema: string;
+    cluster: string;
+    error: Error;
+    duration: number;
+  }) => void;
+  rollbackStarted: (data: {
+    version: string;
+    name: string;
+    schema: string;
+    cluster: string;
+  }) => void;
+  rollbackCompleted: (data: {
+    version: string;
+    name: string;
+    schema: string;
+    cluster: string;
+    duration: number;
+  }) => void;
+  rollbackFailed: (data: {
+    version: string;
+    name: string;
+    schema: string;
+    cluster: string;
+    error: Error;
+    duration: number;
+  }) => void;
+  error: (error: Error) => void;
+  [key: string]: (...args: any[]) => void;
 }
