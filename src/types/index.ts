@@ -573,18 +573,24 @@ export interface MigrationStatus {
   appliedMigrations: number;
   pendingMigrations: number;
   failedMigrations: number;
-  bySchema: Record<string, {
-    applied: number;
-    pending: number;
-    failed: number;
-    lastApplied?: string;
-  }>;
-  byCluster: Record<string, {
-    applied: number;
-    pending: number;
-    failed: number;
-    lastApplied?: string;
-  }>;
+  bySchema: Record<
+    string,
+    {
+      applied: number;
+      pending: number;
+      failed: number;
+      lastApplied?: string;
+    }
+  >;
+  byCluster: Record<
+    string,
+    {
+      applied: number;
+      pending: number;
+      failed: number;
+      lastApplied?: string;
+    }
+  >;
 }
 
 export interface MigrationManagerEvents {

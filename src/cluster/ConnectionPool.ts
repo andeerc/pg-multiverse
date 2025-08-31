@@ -72,7 +72,7 @@ export class ConnectionPool extends EventEmitter {
     };
 
     this._createPool();
-    
+
     // Inicialização assíncrona não-bloqueante
     this._initialize().catch(error => {
       this.emit('error', error, this.poolId);
@@ -203,7 +203,8 @@ export class ConnectionPool extends EventEmitter {
 
     for (let i = 0; i < minConnections; i++) {
       warmupPromises.push(
-        this.pool.connect()
+        this.pool
+          .connect()
           .then(client => {
             setTimeout(() => client.release(), 100);
           })
@@ -277,11 +278,11 @@ export class ConnectionPool extends EventEmitter {
   private async _initialize(): Promise<void> {
     try {
       const connectionTest = await this.testConnection();
-      
+
       if (!connectionTest) {
         throw new Error(`Failed to establish connection for pool ${this.poolId}`);
       }
-      
+
       if (this.config.warmupConnections) {
         await this.warmup();
       }

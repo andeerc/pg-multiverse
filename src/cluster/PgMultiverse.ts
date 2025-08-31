@@ -160,7 +160,10 @@ export class PgMultiverse extends EventEmitter {
     try {
       // Executa query
       const startTime = Date.now();
-      const result = await this.clusterManager.executeQuery<T>(sql, params, { ...options, operation });
+      const result = await this.clusterManager.executeQuery<T>(sql, params, {
+        ...options,
+        operation,
+      });
       const duration = Date.now() - startTime;
 
       // Armazena no cache se configurado
@@ -455,12 +458,15 @@ export class PgMultiverse extends EventEmitter {
   /**
    * Cria nova migration file
    */
-  async createMigration(name: string, options: {
-    targetSchemas: string[];
-    targetClusters?: string[];
-    description?: string;
-    tags?: string[];
-  }): Promise<string> {
+  async createMigration(
+    name: string,
+    options: {
+      targetSchemas: string[];
+      targetClusters?: string[];
+      description?: string;
+      tags?: string[];
+    }
+  ): Promise<string> {
     return this.getMigrationManager().createMigration(name, options);
   }
 

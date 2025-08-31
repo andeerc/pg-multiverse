@@ -259,7 +259,9 @@ export class ClusterManager extends EventEmitter {
     sql: string,
     params: QueryParam[] = [],
     options: QueryOptions = {}
-  ): Promise<QueryResult<T> & { clusterId: string; databaseRole: 'primary' | 'replica'; connectionInfo: any }> {
+  ): Promise<
+    QueryResult<T> & { clusterId: string; databaseRole: 'primary' | 'replica'; connectionInfo: any }
+  > {
     const connection = await this.getConnection(options);
 
     try {
@@ -526,7 +528,7 @@ export class ClusterManager extends EventEmitter {
       clusterInfo.pools.primary = primaryPool;
 
       this.connectionPools.set(`${clusterId}_primary`, primaryPool);
-      
+
       // Aguarda primary estar ready
       await this._waitForPoolReady(primaryPool);
     }
@@ -548,7 +550,7 @@ export class ClusterManager extends EventEmitter {
         this.connectionPools.set(`${clusterId}_replica_${i}`, replicaPool);
 
         // Adiciona listener de erro antes de aguardar
-        replicaPool.on('error', (error) => {
+        replicaPool.on('error', error => {
           // Não propagar erro
         });
 
@@ -557,7 +559,7 @@ export class ClusterManager extends EventEmitter {
           .then(() => {
             // Replica ready
           })
-          .catch((error) => {
+          .catch(error => {
             // Remove réplica com falha
             const replicaIndex = clusterInfo.pools.replicas.indexOf(replicaPool);
             if (replicaIndex > -1) {
@@ -687,7 +689,7 @@ export class ClusterManager extends EventEmitter {
         resolve();
       });
 
-      pool.once('error', (error) => {
+      pool.once('error', error => {
         clearTimeout(timeout);
         reject(error);
       });
@@ -737,7 +739,7 @@ export class ClusterManager extends EventEmitter {
     }
 
     // Connectivity test completed
-    
+
     if (!primaryConnected) {
       throw new Error(`Cluster ${clusterId} primary connection is required but failed`);
     }

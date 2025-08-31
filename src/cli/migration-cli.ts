@@ -43,7 +43,7 @@ class MigrationCLI {
     } as any);
 
     await this.pgMultiverse.initialize(clusterConfig);
-    
+
     if (this.config.verbose) {
       console.log('✅ PgMultiverse initialized successfully');
     }
@@ -56,11 +56,14 @@ class MigrationCLI {
     return this.pgMultiverse;
   }
 
-  async createMigration(name: string, options: {
-    schemas: string[];
-    clusters?: string[];
-    description?: string;
-  }): Promise<void> {
+  async createMigration(
+    name: string,
+    options: {
+      schemas: string[];
+      clusters?: string[];
+      description?: string;
+    }
+  ): Promise<void> {
     const pg = this.ensureInitialized();
 
     try {
@@ -88,7 +91,7 @@ class MigrationCLI {
 
     try {
       console.log('🚀 Starting migration process...');
-      
+
       const status = await pg.migrate({
         targetVersion: options.targetVersion,
         targetSchemas: options.schemas,
@@ -137,7 +140,7 @@ class MigrationCLI {
 
     try {
       console.log('↩️ Starting rollback process...');
-      
+
       const status = await pg.rollback({
         targetVersion: options.targetVersion,
         steps: options.steps,
@@ -162,10 +165,7 @@ class MigrationCLI {
     }
   }
 
-  async status(options: {
-    schemas?: string[];
-    clusters?: string[];
-  }): Promise<void> {
+  async status(options: { schemas?: string[]; clusters?: string[] }): Promise<void> {
     const pg = this.ensureInitialized();
 
     try {
@@ -257,7 +257,7 @@ program
   .option('-v, --verbose', 'Verbose output')
   .hook('preAction', async (thisCommand, actionCommand) => {
     const options = thisCommand.opts();
-    
+
     (cli as any).config.configPath = options.config;
     (cli as any).config.migrationsPath = options.migrations;
     (cli as any).config.verbose = options.verbose;
@@ -269,21 +269,23 @@ program
   .command('create')
   .description('Create a new migration')
   .argument('<name>', 'Migration name')
-  .option('-s, --schemas <schemas>', 'Target schemas (comma-separated)', (value) => value.split(','))
-  .option('-c, --clusters <clusters>', 'Target clusters (comma-separated)', (value) => value.split(','))
+  .option('-s, --schemas <schemas>', 'Target schemas (comma-separated)', value => value.split(','))
+  .option('-c, --clusters <clusters>', 'Target clusters (comma-separated)', value =>
+    value.split(',')
+  )
   .option('-d, --description <description>', 'Migration description')
   .action(async (name, options) => {
     if (!options.schemas) {
       console.error('❌ --schemas is required');
       process.exit(1);
     }
-    
+
     await cli.createMigration(name, {
       schemas: options.schemas,
       clusters: options.clusters,
       description: options.description,
     });
-    
+
     await cli.close();
   });
 
@@ -291,11 +293,13 @@ program
   .command('migrate')
   .description('Run pending migrations')
   .option('-t, --target <version>', 'Target migration version')
-  .option('-s, --schemas <schemas>', 'Target schemas (comma-separated)', (value) => value.split(','))
-  .option('-c, --clusters <clusters>', 'Target clusters (comma-separated)', (value) => value.split(','))
+  .option('-s, --schemas <schemas>', 'Target schemas (comma-separated)', value => value.split(','))
+  .option('-c, --clusters <clusters>', 'Target clusters (comma-separated)', value =>
+    value.split(',')
+  )
   .option('-d, --dry-run', 'Dry run - show what would be migrated without applying')
   .option('-p, --parallel', 'Run migrations in parallel where possible')
-  .action(async (options) => {
+  .action(async options => {
     await cli.migrate({
       targetVersion: options.target,
       schemas: options.schemas,
@@ -303,7 +307,7 @@ program
       dryRun: options.dryRun,
       parallel: options.parallel,
     });
-    
+
     await cli.close();
   });
 
@@ -312,10 +316,12 @@ program
   .description('Rollback migrations')
   .option('-t, --target <version>', 'Target migration version to rollback to')
   .option('-n, --steps <steps>', 'Number of steps to rollback', parseInt)
-  .option('-s, --schemas <schemas>', 'Target schemas (comma-separated)', (value) => value.split(','))
-  .option('-c, --clusters <clusters>', 'Target clusters (comma-separated)', (value) => value.split(','))
+  .option('-s, --schemas <schemas>', 'Target schemas (comma-separated)', value => value.split(','))
+  .option('-c, --clusters <clusters>', 'Target clusters (comma-separated)', value =>
+    value.split(',')
+  )
   .option('-d, --dry-run', 'Dry run - show what would be rolled back without applying')
-  .action(async (options) => {
+  .action(async options => {
     await cli.rollback({
       targetVersion: options.target,
       steps: options.steps,
@@ -323,21 +329,25 @@ program
       clusters: options.clusters,
       dryRun: options.dryRun,
     });
-    
+
     await cli.close();
   });
 
 program
   .command('status')
   .description('Show migration status')
-  .option('-s, --schemas <schemas>', 'Filter by schemas (comma-separated)', (value) => value.split(','))
-  .option('-c, --clusters <clusters>', 'Filter by clusters (comma-separated)', (value) => value.split(','))
-  .action(async (options) => {
+  .option('-s, --schemas <schemas>', 'Filter by schemas (comma-separated)', value =>
+    value.split(',')
+  )
+  .option('-c, --clusters <clusters>', 'Filter by clusters (comma-separated)', value =>
+    value.split(',')
+  )
+  .action(async options => {
     await cli.status({
       schemas: options.schemas,
       clusters: options.clusters,
     });
-    
+
     await cli.close();
   });
 
@@ -356,13 +366,13 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-process.on('uncaughtException', async (error) => {
+process.on('uncaughtException', async error => {
   console.error('Uncaught Exception:', error);
   await cli.close();
   process.exit(1);
 });
 
-process.on('unhandledRejection', async (reason) => {
+process.on('unhandledRejection', async reason => {
   console.error('Unhandled Rejection:', reason);
   await cli.close();
   process.exit(1);
