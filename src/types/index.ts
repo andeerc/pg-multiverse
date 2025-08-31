@@ -20,6 +20,29 @@ export interface QueryResult<T = any> {
   command: string;
   fields: QueryField[];
   oid?: number;
+  clusterId?: string;
+  databaseRole?: 'primary' | 'replica';
+  connectionInfo?: {
+    host: string;
+    port: number;
+    database: string;
+    user: string;
+    replicaIndex?: number;
+  };
+}
+
+export interface ConnectionMetadata {
+  clusterId: string;
+  schema?: string;
+  pool: string;
+  databaseRole: 'primary' | 'replica';
+  connectionInfo: {
+    host: string;
+    port: number;
+    database: string;
+    user: string;
+    replicaIndex?: number;
+  };
 }
 
 export interface DatabaseConnection {
@@ -196,6 +219,7 @@ export interface QueryOptions {
   timeout?: number;
   retryAttempts?: number;
   shardKey?: string | number;
+  preferReplica?: boolean;
 }
 
 export interface PreparedQuery {

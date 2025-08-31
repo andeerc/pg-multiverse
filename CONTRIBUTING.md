@@ -408,7 +408,7 @@ npm run release:major    # Major release
 
 ### Key Files
 
-- `src/cluster/MultiClusterPostgres.ts` - Main entry point
+- `src/cluster/PgMultiverse.ts` - Main entry point
 - `src/cluster/ClusterManager.ts` - Cluster management
 - `src/cluster/ConnectionPool.ts` - Connection pooling
 - `src/types/index.ts` - TypeScript definitions

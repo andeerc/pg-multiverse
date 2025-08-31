@@ -1,5 +1,5 @@
 // Exportações principais
-export { PgMultiverse } from './cluster/MultiClusterPostgres';
+export { PgMultiverse } from './cluster/PgMultiverse';
 export { ClusterManager } from './cluster/ClusterManager';
 export { ClusterConfig as ClusterConfigManager } from './cluster/ClusterConfig';
 export { ConnectionPool } from './cluster/ConnectionPool';
@@ -25,7 +25,7 @@ export * from './types';
 // export * from './utils';
 
 // Default export
-export { PgMultiverse as default } from './cluster/MultiClusterPostgres';
+export { PgMultiverse as default } from './cluster/PgMultiverse';
 
 // Versão do pacote
 export const VERSION = '1.3.0';

@@ -16,7 +16,7 @@ import {
   QueryParam,
   QueryResult,
 } from '../types';
-import { PgMultiverse } from '../cluster/MultiClusterPostgres';
+import { PgMultiverse } from '../cluster/PgMultiverse';
 
 /**
  * Gerenciador de migrations para PgMultiverse
@@ -31,7 +31,7 @@ export class MigrationManager extends EventEmitter {
 
   constructor(pgMultiverse: PgMultiverse, config: MigrationConfig = {}) {
     super();
-    
+
     this.pgMultiverse = pgMultiverse;
     this.config = {
       migrationsPath: path.resolve(process.cwd(), 'migrations'),
@@ -59,15 +59,15 @@ export class MigrationManager extends EventEmitter {
 
     try {
       this.logger.info('Initializing MigrationManager');
-      
+
       // Carrega migrations do diretório
       await this._loadMigrations();
-      
+
       // Criação das tabelas será feita quando necessário
 
       this.isInitialized = true;
       this.logger.info('MigrationManager initialized successfully');
-      
+
     } catch (error) {
       this.emit('error', error as Error);
       throw error;
@@ -91,18 +91,18 @@ export class MigrationManager extends EventEmitter {
       continueOnError = false,
     } = options;
 
-    this.logger.info('Starting migration process', { 
-      targetVersion, 
-      targetSchemas, 
-      targetClusters, 
-      dryRun 
+    this.logger.info('Starting migration process', {
+      targetVersion,
+      targetSchemas,
+      targetClusters,
+      dryRun
     });
 
     try {
       // Obtém schemas e clusters a processar
       const schemasToProcess = await this._getTargetSchemas(targetSchemas);
       const clustersToProcess = await this._getTargetClusters(targetClusters);
-      
+
       // Cria tabelas de controle se necessário
       if (this.config.autoCreateMigrationsTable && schemasToProcess.length > 0) {
         await this._createMigrationTables();
@@ -110,8 +110,8 @@ export class MigrationManager extends EventEmitter {
 
       // Obtém migrations pendentes
       const pendingMigrations = await this._getPendingMigrations(
-        schemasToProcess, 
-        clustersToProcess, 
+        schemasToProcess,
+        clustersToProcess,
         targetVersion
       );
 
@@ -134,24 +134,24 @@ export class MigrationManager extends EventEmitter {
       if (parallel) {
         // Execução paralela por schema/cluster
         executed = await this._executeParallel(
-          pendingMigrations, 
-          maxParallel, 
-          continueOnError, 
+          pendingMigrations,
+          maxParallel,
+          continueOnError,
           errors
         );
       } else {
         // Execução sequencial
         executed = await this._executeSequential(
-          pendingMigrations, 
-          continueOnError, 
+          pendingMigrations,
+          continueOnError,
           errors
         );
       }
 
       const status = await this._generateStatus(schemasToProcess, clustersToProcess);
-      
+
       this.logger.info(`Migration process completed. ${executed} migrations executed.`);
-      
+
       if (errors.length > 0) {
         this.logger.warn(`${errors.length} migrations failed`, { errors });
       }
@@ -179,18 +179,18 @@ export class MigrationManager extends EventEmitter {
       force = false,
     } = options;
 
-    this.logger.info('Starting rollback process', { 
-      targetVersion, 
-      steps, 
-      targetSchemas, 
-      targetClusters, 
-      dryRun 
+    this.logger.info('Starting rollback process', {
+      targetVersion,
+      steps,
+      targetSchemas,
+      targetClusters,
+      dryRun
     });
 
     try {
       const schemasToProcess = await this._getTargetSchemas(targetSchemas);
       const clustersToProcess = await this._getTargetClusters(targetClusters);
-      
+
       // Obtém migrations para rollback
       const migrationsToRollback = await this._getMigrationsToRollback(
         schemasToProcess,
@@ -222,9 +222,9 @@ export class MigrationManager extends EventEmitter {
       }
 
       const status = await this._generateStatus(schemasToProcess, clustersToProcess);
-      
+
       this.logger.info(`Rollback process completed. ${rolledBack} migrations rolled back.`);
-      
+
       if (errors.length > 0) {
         this.logger.warn(`${errors.length} rollbacks failed`, { errors });
       }
@@ -242,10 +242,10 @@ export class MigrationManager extends EventEmitter {
    */
   async getStatus(): Promise<MigrationStatus> {
     this._ensureInitialized();
-    
+
     const allSchemas = await this._getAllSchemas();
     const allClusters = await this._getAllClusters();
-    
+
     return this._generateStatus(allSchemas, allClusters);
   }
 
@@ -294,9 +294,9 @@ export class MigrationManager extends EventEmitter {
     await fs.promises.mkdir(this.config.migrationsPath, { recursive: true });
 
     const template = this._generateMigrationTemplate(version, name, options);
-    
+
     await fs.promises.writeFile(filepath, template, 'utf8');
-    
+
     this.logger.info(`Created migration file: ${filepath}`);
     return filepath;
   }
@@ -306,7 +306,7 @@ export class MigrationManager extends EventEmitter {
    */
   async close(): Promise<void> {
     if (!this.isInitialized) return;
-    
+
     this.migrations.clear();
     this.isInitialized = false;
     this.logger.info('MigrationManager closed');
@@ -356,7 +356,7 @@ export class MigrationManager extends EventEmitter {
     }
 
     const files = await fs.promises.readdir(this.config.migrationsPath);
-    const migrationFiles = files.filter(file => 
+    const migrationFiles = files.filter(file =>
       file.endsWith('.ts') || file.endsWith('.js')
     ).sort();
 
@@ -384,7 +384,7 @@ export class MigrationManager extends EventEmitter {
               });
               process.env.TS_NODE_REGISTERED = 'true';
             }
-            
+
             // Remove do cache para permitir hot reload
             delete require.cache[filepath];
             migration = require(filepath);
@@ -404,7 +404,7 @@ export class MigrationManager extends EventEmitter {
           delete require.cache[filepath];
           migration = require(filepath);
         }
-        
+
         const migrationObject = migration.default || migration;
         if (migrationObject && typeof migrationObject === 'object') {
           this._validateMigration(migrationObject);
@@ -523,7 +523,7 @@ export default migration;
 
     const allSchemas = new Set<string>();
     const clusters = clusterManager.getClusters();
-    
+
     for (const [clusterId, cluster] of clusters.entries()) {
       if (cluster.config.schemas) {
         cluster.config.schemas.forEach((schema: string) => allSchemas.add(schema));
@@ -560,17 +560,17 @@ export default migration;
   }
 
   private async _getPendingMigrations(
-    schemas: string[], 
-    clusters: string[], 
+    schemas: string[],
+    clusters: string[],
     targetVersion?: string
-  ): Promise<Array<{migration: Migration, schema: string, cluster: string}>> {
-    const pendingMigrations: Array<{migration: Migration, schema: string, cluster: string}> = [];
-    
+  ): Promise<Array<{ migration: Migration, schema: string, cluster: string }>> {
+    const pendingMigrations: Array<{ migration: Migration, schema: string, cluster: string }> = [];
+
     // Para cada combinação schema/cluster, verifica migrations pendentes
     for (const schema of schemas) {
       const clusterForSchema = await this._getClusterForSchema(schema);
-      const targetClusters = clusters.includes(clusterForSchema) ? [clusterForSchema] : 
-                           clusters.length > 0 ? clusters.filter(c => c === clusterForSchema) : [clusterForSchema];
+      const targetClusters = clusters.includes(clusterForSchema) ? [clusterForSchema] :
+        clusters.length > 0 ? clusters.filter(c => c === clusterForSchema) : [clusterForSchema];
 
       for (const cluster of targetClusters) {
         // Obtém migrations já aplicadas
@@ -603,13 +603,13 @@ export default migration;
 
     for (const schema of schemas) {
       const clusterForSchema = await this._getClusterForSchema(schema);
-      const targetClusters = clusters.includes(clusterForSchema) ? [clusterForSchema] : 
-                           clusters.length > 0 ? clusters.filter(c => c === clusterForSchema) : [clusterForSchema];
+      const targetClusters = clusters.includes(clusterForSchema) ? [clusterForSchema] :
+        clusters.length > 0 ? clusters.filter(c => c === clusterForSchema) : [clusterForSchema];
 
       for (const cluster of targetClusters) {
         const appliedMigrations = await this._getAppliedMigrations(schema, cluster);
-        
-        let migrationsForRollback = appliedMigrations.sort((a, b) => 
+
+        let migrationsForRollback = appliedMigrations.sort((a, b) =>
           b.version.localeCompare(a.version) // Ordem decrescente
         );
 
@@ -667,7 +667,7 @@ export default migration;
     return cluster;
   }
 
-  private async _validateDependencies(migrations: Array<{migration: Migration, schema: string, cluster: string}>): Promise<void> {
+  private async _validateDependencies(migrations: Array<{ migration: Migration, schema: string, cluster: string }>): Promise<void> {
     const migrationVersions = new Set(migrations.map(m => m.migration.version));
 
     for (const { migration } of migrations) {
@@ -709,8 +709,8 @@ export default migration;
   }
 
   private async _executeSequential(
-    migrations: Array<{migration: Migration, schema: string, cluster: string}>, 
-    continueOnError: boolean, 
+    migrations: Array<{ migration: Migration, schema: string, cluster: string }>,
+    continueOnError: boolean,
     errors: Error[]
   ): Promise<number> {
     let executed = 0;
@@ -730,17 +730,17 @@ export default migration;
   }
 
   private async _executeParallel(
-    migrations: Array<{migration: Migration, schema: string, cluster: string}>, 
-    maxParallel: number, 
-    continueOnError: boolean, 
+    migrations: Array<{ migration: Migration, schema: string, cluster: string }>,
+    maxParallel: number,
+    continueOnError: boolean,
     errors: Error[]
   ): Promise<number> {
     let executed = 0;
-    const batches: Array<Array<{migration: Migration, schema: string, cluster: string}>> = [];
-    
+    const batches: Array<Array<{ migration: Migration, schema: string, cluster: string }>> = [];
+
     // Agrupa por schema/cluster para execução paralela
-    const groups = new Map<string, Array<{migration: Migration, schema: string, cluster: string}>>();
-    
+    const groups = new Map<string, Array<{ migration: Migration, schema: string, cluster: string }>>();
+
     for (const item of migrations) {
       const key = `${item.schema}@${item.cluster}`;
       if (!groups.has(key)) {
@@ -781,12 +781,12 @@ export default migration;
 
   private async _executeMigration(migration: Migration, schema: string, cluster: string): Promise<void> {
     const startTime = Date.now();
-    
-    this.emit('migrationStarted', { 
-      version: migration.version, 
-      name: migration.name, 
-      schema, 
-      cluster 
+
+    this.emit('migrationStarted', {
+      version: migration.version,
+      name: migration.name,
+      schema,
+      cluster
     });
 
     try {
@@ -826,17 +826,17 @@ export default migration;
       // Liberar lock
       await this._releaseLock(`${migration.version}-${schema}-${cluster}`);
 
-      this.emit('migrationCompleted', { 
-        version: migration.version, 
-        name: migration.name, 
-        schema, 
+      this.emit('migrationCompleted', {
+        version: migration.version,
+        name: migration.name,
+        schema,
         cluster,
         duration: executionTime
       });
 
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Liberar lock em caso de erro
       try {
         await this._releaseLock(`${migration.version}-${schema}-${cluster}`);
@@ -844,10 +844,10 @@ export default migration;
         this.logger.warn(`Failed to release lock:`, lockError);
       }
 
-      this.emit('migrationFailed', { 
-        version: migration.version, 
-        name: migration.name, 
-        schema, 
+      this.emit('migrationFailed', {
+        version: migration.version,
+        name: migration.name,
+        schema,
         cluster,
         error: error as Error,
         duration
@@ -869,11 +869,11 @@ export default migration;
     }
 
     const startTime = Date.now();
-    
-    this.emit('rollbackStarted', { 
-      version: record.version, 
-      name: record.name, 
-      schema: record.schema, 
+
+    this.emit('rollbackStarted', {
+      version: record.version,
+      name: record.name,
+      schema: record.schema,
       cluster: record.cluster
     });
 
@@ -883,9 +883,9 @@ export default migration;
 
       const context: MigrationContext = {
         query: async (sql: string, params?: QueryParam[]) => {
-          return this.pgMultiverse.query(sql, params || [], { 
-            schema: record.schema, 
-            clusterId: record.cluster 
+          return this.pgMultiverse.query(sql, params || [], {
+            schema: record.schema,
+            clusterId: record.cluster
           });
         },
         schema: record.schema,
@@ -901,25 +901,25 @@ export default migration;
       await this.pgMultiverse.query(`
         DELETE FROM ${this.config.migrationsTable}
         WHERE version = $1 AND schema_name = $2 AND cluster_id = $3
-      `, [record.version, record.schema, record.cluster], { 
-        clusterId: record.cluster 
+      `, [record.version, record.schema, record.cluster], {
+        clusterId: record.cluster
       });
 
       // Liberar lock
       await this._releaseLock(`rollback-${record.version}-${record.schema}-${record.cluster}`);
 
       const duration = Date.now() - startTime;
-      this.emit('rollbackCompleted', { 
-        version: record.version, 
-        name: record.name, 
-        schema: record.schema, 
+      this.emit('rollbackCompleted', {
+        version: record.version,
+        name: record.name,
+        schema: record.schema,
         cluster: record.cluster,
         duration
       });
 
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Liberar lock em caso de erro
       try {
         await this._releaseLock(`rollback-${record.version}-${record.schema}-${record.cluster}`);
@@ -927,10 +927,10 @@ export default migration;
         this.logger.warn(`Failed to release rollback lock:`, lockError);
       }
 
-      this.emit('rollbackFailed', { 
-        version: record.version, 
-        name: record.name, 
-        schema: record.schema, 
+      this.emit('rollbackFailed', {
+        version: record.version,
+        name: record.name,
+        schema: record.schema,
         cluster: record.cluster,
         error: error as Error,
         duration
@@ -946,7 +946,7 @@ export default migration;
 
     try {
       const clusters = await this._getAllClusters();
-      
+
       for (const cluster of clusters) {
         await this.pgMultiverse.query(`
           INSERT INTO ${this.config.lockTable} (lock_key, locked_by, expires_at)
@@ -966,7 +966,7 @@ export default migration;
   private async _releaseLock(lockKey: string): Promise<void> {
     try {
       const clusters = await this._getAllClusters();
-      
+
       for (const cluster of clusters) {
         await this.pgMultiverse.query(`
           DELETE FROM ${this.config.lockTable} WHERE lock_key = $1
@@ -1009,7 +1009,7 @@ export default migration;
 
         status.bySchema[schema].applied = appliedMigrations.length;
         status.byCluster[cluster].applied += appliedMigrations.length;
-        
+
         if (appliedMigrations.length > 0) {
           status.bySchema[schema].lastApplied = appliedMigrations[appliedMigrations.length - 1].version;
           status.byCluster[cluster].lastApplied = appliedMigrations[appliedMigrations.length - 1].version;

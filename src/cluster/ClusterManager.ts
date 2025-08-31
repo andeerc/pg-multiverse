@@ -15,6 +15,7 @@ import {
   OperationType,
   TransactionOptions,
   TypedEventEmitter,
+  ConnectionMetadata,
 } from '../types';
 import { ConnectionPool } from './ConnectionPool';
 import { HealthChecker } from './HealthChecker';
@@ -53,11 +54,7 @@ interface ClusterInfo {
 }
 
 export interface WrappedConnection extends PoolClient {
-  _clusterMetadata: {
-    clusterId: string;
-    schema?: string;
-    pool: string;
-  };
+  _clusterMetadata: ConnectionMetadata;
 }
 
 interface ClusterStats {
@@ -220,14 +217,17 @@ export class ClusterManager extends EventEmitter {
 
     try {
       let pool: ConnectionPool;
+      let databaseRole: 'primary' | 'replica';
 
       if (useReplica && cluster.pools.replicas.length > 0) {
         // Seleciona replica usando load balancer
         const replicaIndex = this.loadBalancer.selectReplica(cluster.pools.replicas, options);
         pool = cluster.pools.replicas[replicaIndex];
+        databaseRole = 'replica';
       } else if (cluster.pools.primary) {
         // Usa primary
         pool = cluster.pools.primary;
+        databaseRole = 'primary';
       } else {
         throw new Error(`No suitable connection pool found for cluster: ${targetCluster}`);
       }
@@ -239,6 +239,8 @@ export class ClusterManager extends EventEmitter {
         clusterId: targetCluster,
         schema,
         pool: pool.getId(),
+        databaseRole,
+        connectionInfo: pool.getConnectionInfo(),
       }) as WrappedConnection;
 
       this.stats.activeConnections++;
@@ -257,7 +259,7 @@ export class ClusterManager extends EventEmitter {
     sql: string,
     params: QueryParam[] = [],
     options: QueryOptions = {}
-  ): Promise<QueryResult<T> & { clusterId: string }> {
+  ): Promise<QueryResult<T> & { clusterId: string; databaseRole: 'primary' | 'replica'; connectionInfo: any }> {
     const connection = await this.getConnection(options);
 
     try {
@@ -272,6 +274,8 @@ export class ClusterManager extends EventEmitter {
       return {
         ...result,
         clusterId: connection._clusterMetadata.clusterId,
+        databaseRole: connection._clusterMetadata.databaseRole,
+        connectionInfo: connection._clusterMetadata.connectionInfo,
       };
     } catch (error) {
       this.stats.failedQueries++;

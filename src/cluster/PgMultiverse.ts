@@ -74,7 +74,7 @@ export class PgMultiverse extends EventEmitter {
    */
   async initialize(clusterConfigs?: ClustersConfig): Promise<void> {
     if (this.isInitialized) {
-      throw new Error('MultiClusterPostgres already initialized');
+      throw new Error('PgMultiverse already initialized');
     }
 
     try {
@@ -117,7 +117,7 @@ export class PgMultiverse extends EventEmitter {
         schemas: Array.from(this.schemas.keys()),
       });
 
-      // MultiClusterPostgres initialized
+      // PgMultiverse initialized
     } catch (error) {
       this.emit('error', error as Error);
       throw error;
@@ -160,7 +160,7 @@ export class PgMultiverse extends EventEmitter {
     try {
       // Executa query
       const startTime = Date.now();
-      const result = await this.clusterManager.executeQuery<T>(sql, params, options);
+      const result = await this.clusterManager.executeQuery<T>(sql, params, { ...options, operation });
       const duration = Date.now() - startTime;
 
       // Armazena no cache se configurado
@@ -509,7 +509,7 @@ export class PgMultiverse extends EventEmitter {
       this.isInitialized = false;
       this.emit('closed');
 
-      // MultiClusterPostgres closed
+      // PgMultiverse closed
     } catch (error) {
       this.emit('error', error as Error);
       throw error;
@@ -597,7 +597,7 @@ export class PgMultiverse extends EventEmitter {
 
   private _ensureInitialized(): void {
     if (!this.isInitialized) {
-      throw new Error('MultiClusterPostgres not initialized. Call initialize() first.');
+      throw new Error('PgMultiverse not initialized. Call initialize() first.');
     }
   }
 

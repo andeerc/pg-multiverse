@@ -53,7 +53,7 @@ npm install -g pg-multiverse
 ### Basic Usage
 
 ```typescript
-import { MultiClusterPostgres } from 'pg-multiverse';
+import { PgMultiverse } from 'pg-multiverse';
 
 // Define your data types
 interface User {
@@ -64,7 +64,7 @@ interface User {
 }
 
 // Initialize with cluster configuration
-const postgres = new MultiClusterPostgres({
+const postgres = new PgMultiverse({
   enableCache: true,
   enableMetrics: true,
   enableTransactions: true
@@ -898,8 +898,8 @@ const pool = new Pool({ /* config */ });
 const result = await pool.query('SELECT * FROM users');
 
 // After: PG Multiverse with type safety
-import { MultiClusterPostgres } from 'pg-multiverse';
-const postgres = new MultiClusterPostgres();
+import { PgMultiverse } from 'pg-multiverse';
+const postgres = new PgMultiverse();
 await postgres.initialize(config);
 const result = await postgres.query<User>('SELECT * FROM users');
 ```

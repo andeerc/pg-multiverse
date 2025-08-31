@@ -177,6 +177,22 @@ export class ConnectionPool extends EventEmitter {
     };
   }
 
+  getConnectionInfo(): {
+    host: string;
+    port: number;
+    database: string;
+    user: string;
+    replicaIndex?: number;
+  } {
+    return {
+      host: this.config.host,
+      port: this.config.port,
+      database: this.config.database,
+      user: this.config.user,
+      replicaIndex: this.replicaIndex,
+    };
+  }
+
   async warmup(): Promise<void> {
     if (!this.config.warmupConnections || this.isClosed) {
       return;

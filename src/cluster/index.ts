@@ -4,7 +4,7 @@ export { ConnectionPool } from './ConnectionPool';
 export { ClusterConfig } from './ClusterConfig';
 
 // Main entry point
-export { PgMultiverse } from './MultiClusterPostgres';
+export { PgMultiverse } from './PgMultiverse';
 
 // Supporting components (optional imports)
 export { HealthChecker } from './HealthChecker';
